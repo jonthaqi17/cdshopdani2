@@ -474,10 +474,64 @@ async function perfundoSshitjen() {
   if (!confirm('Konfirmo shitjen?')) return;
 
   const btn = document.getElementById('btnPerfundo');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Duke ruajtur...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Duke ruajtur...'; }
 
   try {
+    console.log('=== FILLON SHITJA ===');
+    
     for (const it of SHporta) {
+      console.log('Duke procesuar:', it.emri, 'x', it.sasia);
+      
+      // 1. Lexo stokun aktual
+      const { data: prod, error: errRead } = await db
+        .from('produktet')
+        .select('sasia, emri')
+        .eq('id', it.id)
+        .single();
+      
+      if (errRead) throw new Error('Lexim: ' + errRead.message);
+      if (!prod) throw new Error('Produkti nuk u gjet!');
+      if (prod.sasia < it.sasia) throw new Error('Stok i pamjaftueshëm!');
+      
+      console.log('Stoku aktual:', prod.sasia, '→', prod.sasia - it.sasia);
+      
+      // 2. Update stokun
+      const stokuRi = prod.sasia - it.sasia;
+      const { data: upd, error: errUpd } = await db
+        .from('produktet')
+        .update({ sasia: stokuRi })
+        .eq('id', it.id)
+        .select();
+      
+      console.log('Update data:', upd);
+      console.log('Update error:', errUpd);
+      
+      if (errUpd) throw new Error('Update: ' + errUpd.message);
+      if (!upd || upd.length === 0) throw new Error('Update ktheu bosh!');
+      
+      // 3. Regjistro shitjen
+      const { error: errIns } = await db.from('shitjet').insert({
+        produkt_id: it.id,
+        emri_produktit: it.emri,
+        sasia: it.sasia,
+        cmimi_njesi: it.cmimi,
+        totali: it.cmimi * it.sasia,
+        punetor_id: USER.id,
+        punetor_emri: USER.emri
+      });
+      
+      if (errIns) throw new Error('Shitje: ' + errIns.message);
+      console.log('✅ U ruajt:', it.emri);
+    }
+    
+    alert('✅ Shitja u regjistrua dhe stoku u zvogëlua!');
+    renderShitje();
+  } catch (e) {
+    console.error('GABIM:', e);
+    alert('❌ ' + e.message);
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle"></i> Përfundo'; }
+  }
+}
       // 1. Lexo stokun aktual
       const { data: prod, error: errRead } = await db
         .from('produktet')
