@@ -6,7 +6,6 @@
 <title>Sistemi i Dyqanit</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<!-- ⚠️ KJO ËSHTË RRETHI I SHTUAR - Bootstrap JS për modal -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -56,7 +55,6 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; }
 <div class="container-fluid">
 <div class="row">
 
-  <!-- SIDEBAR -->
   <div class="col-md-2 sidebar">
     <div class="brand">
       <h5 class="mb-0">🏪 Dyqani</h5>
@@ -65,7 +63,6 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; }
     <nav id="navMenu"></nav>
   </div>
 
-  <!-- MAIN -->
   <div class="col-md-10 p-4" id="mainContent"></div>
 
 </div>
@@ -81,7 +78,7 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; }
 
 <script>
 // =====================================================
-// KONFIGURIMI - NDRYSHO KËTO ME TË DHËNAT E PROJEKTIT TËND
+// KONFIGURIMI
 // =====================================================
 const SUPABASE_URL = 'https://rhkaqtpfhcyajyslnvln.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa2FxdHBmaGN5YWp5c2xudmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3Mzc1OTQsImV4cCI6MjA5MDMxMzU5NH0.oaObjuascv482VGXD7p-loOZY048mt1LbwJlWcZyCSE';
@@ -395,7 +392,7 @@ function renderShitje() {
           </div>
           <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h4 class="mb-0">Totali: <span id="totaliShitjes" class="text-success">0.00 €</span></h4>
-            <button class="btn btn-success btn-lg" onclick="perfundoSshitjen()">
+            <button class="btn btn-success btn-lg" id="btnPerfundo" onclick="perfundoSshitjen()">
               <i class="bi bi-check-circle"></i> Përfundo
             </button>
           </div>
@@ -476,26 +473,60 @@ async function perfundoSshitjen() {
   if (!SHporta.length) return alert('Shporta është bosh!');
   if (!confirm('Konfirmo shitjen?')) return;
 
-  for (const it of SHporta) {
-    const { data: prod } = await db.from('produktet').select('sasia').eq('id', it.id).single();
-    if (!prod || prod.sasia < it.sasia) return alert(`Stok i pamjaftueshëm për ${it.emri}`);
-    
-    const { error: e1 } = await db.from('produktet').update({ sasia: prod.sasia - it.sasia }).eq('id', it.id);
-    if (e1) return alert(e1.message);
+  const btn = document.getElementById('btnPerfundo');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Duke ruajtur...'; }
 
-    const { error: e2 } = await db.from('shitjet').insert({
-      produkt_id: it.id,
-      emri_produktit: it.emri,
-      sasia: it.sasia,
-      cmimi_njesi: it.cmimi,
-      totali: it.cmimi * it.sasia,
-      punetor_id: USER.id,
-      punetor_emri: USER.emri
-    });
-    if (e2) return alert(e2.message);
+  try {
+    for (const it of SHporta) {
+      // 1. Lexo stokun aktual
+      const { data: prod, error: errRead } = await db
+        .from('produktet')
+        .select('sasia, emri')
+        .eq('id', it.id)
+        .single();
+
+      if (errRead) throw new Error('Lexim stoku: ' + errRead.message);
+      if (!prod) throw new Error('Produkti nuk u gjet!');
+      if (prod.sasia < it.sasia) {
+        throw new Error(`Stok i pamjaftueshëm për ${it.emri}. Ka ${prod.sasia}, kërkohet ${it.sasia}`);
+      }
+
+      // 2. Zvogëlo stokun — ME .select() për kontroll
+      const stokuRi = prod.sasia - it.sasia;
+      const { data: updated, error: errUpd } = await db
+        .from('produktet')
+        .update({ sasia: stokuRi })
+        .eq('id', it.id)
+        .select();
+
+      if (errUpd) throw new Error('Update stoku: ' + errUpd.message);
+      if (!updated || updated.length === 0) {
+        throw new Error('Stoku NUK u përditësua! Kontrollo RLS policies në Supabase.');
+      }
+      console.log(`✅ Stoku: ${it.emri} ${prod.sasia} → ${stokuRi}`);
+
+      // 3. Regjistro shitjen
+      const { error: errIns } = await db.from('shitjet').insert({
+        produkt_id: it.id,
+        emri_produktit: it.emri,
+        sasia: it.sasia,
+        cmimi_njesi: it.cmimi,
+        totali: it.cmimi * it.sasia,
+        punetor_id: USER.id,
+        punetor_emri: USER.emri
+      });
+
+      if (errIns) throw new Error('Regjistrim shitjeje: ' + errIns.message);
+      console.log(`✅ Shitja u regjistrua: ${it.emri} x${it.sasia}`);
+    }
+
+    alert('✅ Shitja u regjistrua dhe stoku u zvogëlua me sukses!');
+    renderShitje();
+  } catch (e) {
+    console.error('GABIM:', e);
+    alert('❌ Gabim: ' + e.message);
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle"></i> Përfundo'; }
   }
-  alert('✅ Shitja u regjistrua me sukses!');
-  renderShitje();
 }
 
 // =====================================================
