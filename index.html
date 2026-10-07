@@ -2,1083 +2,699 @@
 <html lang="sq">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CD Shop Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Sistemi i Dyqanit</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0f172a; color: #e2e8f0; padding: 20px; min-height: 100vh;
-  }
-  .container { max-width: 1200px; margin: 0 auto; }
-  h1 {
-    font-size: 28px; margin-bottom: 8px;
-    background: linear-gradient(90deg, #60a5fa, #a78bfa);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .subtitle { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: #1e293b;
-    padding: 6px; border-radius: 12px; flex-wrap: wrap; }
-  .tab { flex: 1; min-width: 120px; padding: 12px 16px; background: transparent;
-    border: none; color: #94a3b8; border-radius: 8px; cursor: pointer;
-    font-size: 14px; font-weight: 500; transition: all 0.2s; }
-  .tab:hover { color: #e2e8f0; }
-  .tab.active { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .card { background: #1e293b; border-radius: 12px; padding: 20px;
-    margin-bottom: 16px; border: 1px solid #334155; }
-  .card h2 { font-size: 18px; margin-bottom: 16px; color: #f1f5f9; }
-  .grid { display: grid; gap: 16px; }
-  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px; margin-bottom: 12px; }
-  label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
-  input, select, textarea {
-    width: 100%; padding: 10px 12px; background: #0f172a;
-    border: 1px solid #334155; border-radius: 8px; color: #e2e8f0;
-    font-size: 14px; outline: none; font-family: inherit;
-  }
-  input:focus, select:focus { border-color: #3b82f6; }
-  button { padding: 10px 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    color: white; border: none; border-radius: 8px; cursor: pointer;
-    font-size: 14px; font-weight: 600; transition: transform 0.1s; }
-  button:hover { transform: translateY(-1px); }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
-  .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
-  .btn-secondary { background: #334155; }
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #334155; vertical-align: middle; }
-  th { color: #94a3b8; font-weight: 600; font-size: 12px;
-    text-transform: uppercase; letter-spacing: 0.5px; }
-  tr:hover td { background: #0f172a; }
-  .stat { background: linear-gradient(135deg, #1e293b, #334155);
-    padding: 16px; border-radius: 10px; border-left: 3px solid #3b82f6; }
-  .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; }
-  .stat-value { font-size: 22px; font-weight: 700; color: #f1f5f9; }
-  .stat.total { border-left-color: #f59e0b; }
-  .stat.worker { border-left-color: #10b981; }
-  .positive { color: #10b981; }
-  .negative { color: #ef4444; }
-  .empty { text-align: center; padding: 40px; color: #64748b; font-size: 14px; }
-  .badge { display: inline-block; padding: 3px 8px; border-radius: 6px;
-    font-size: 11px; font-weight: 600; }
-  .badge-in { background: #064e3b; color: #6ee7b7; }
-  .badge-admin { background: #7c3aed; color: #ddd6fe; }
-  .badge-worker { background: #0369a1; color: #bae6fd; }
-  .badge-cat { background: #1e40af; color: #bfdbfe; padding: 3px 8px; }
-  #toast { position: fixed; bottom: 20px; right: 20px; background: #10b981;
-    color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px;
-    font-weight: 600; opacity: 0; transform: translateY(20px);
-    transition: all 0.3s; pointer-events: none; z-index: 1000; }
-  #toast.show { opacity: 1; transform: translateY(0); }
-  #toast.error { background: #ef4444; }
-  #loginScreen { max-width: 400px; margin: 100px auto; }
-  #loginScreen .card { padding: 32px; }
-  .hidden { display: none !important; }
-  .user-info { display: flex; align-items: center; gap: 12px; }
-  .user-avatar { width: 40px; height: 40px; border-radius: 50%;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 16px; }
-  
-  /* Product images */
-  .prod-thumb {
-    width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
-    background: #0f172a; border: 1px solid #334155;
-  }
-  .prod-thumb-empty {
-    width: 48px; height: 48px; border-radius: 8px;
-    background: #0f172a; border: 1px dashed #334155;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; color: #475569;
-  }
-  .image-upload-area {
-    display: flex; align-items: center; gap: 12px; padding: 12px;
-    background: #0f172a; border: 1px dashed #334155; border-radius: 8px;
-    cursor: pointer; transition: border-color 0.2s;
-  }
-  .image-upload-area:hover { border-color: #3b82f6; }
-  .image-preview {
-    width: 80px; height: 80px; border-radius: 8px; object-fit: cover;
-    background: #1e293b; border: 1px solid #334155;
-  }
-  .image-preview-empty {
-    width: 80px; height: 80px; border-radius: 8px;
-    background: #1e293b; border: 1px dashed #334155;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 28px; color: #475569;
-  }
-  
-  /* Product cards for sales */
-  .product-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 12px; margin-top: 12px;
-  }
-  .product-card {
-    background: #0f172a; border: 1px solid #334155; border-radius: 10px;
-    padding: 10px; cursor: pointer; transition: all 0.2s;
-    text-align: center;
-  }
-  .product-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
-  .product-card.selected { border-color: #3b82f6; background: #1e3a5f; }
-  .product-card img {
-    width: 100%; height: 120px; object-fit: cover; border-radius: 6px;
-    background: #1e293b;
-  }
-  .product-card .no-img {
-    width: 100%; height: 120px; border-radius: 6px;
-    background: #1e293b; display: flex; align-items: center; justify-content: center;
-    font-size: 40px; color: #475569;
-  }
-  .product-card .p-name {
-    font-size: 13px; font-weight: 600; margin-top: 8px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .product-card .p-price { font-size: 12px; color: #10b981; font-weight: 600; margin-top: 2px; }
-  .product-card .p-stock { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-  
-  @media (max-width: 640px) {
-    body { padding: 12px; }
-    h1 { font-size: 22px; }
-    .stat-value { font-size: 18px; }
-  }
+body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; }
+.login-wrap { max-width:420px; margin:60px auto; }
+.sidebar { background:#0f172a; color:#fff; min-height:100vh; padding:0; }
+.sidebar .brand { padding:18px; border-bottom:1px solid #1e293b; }
+.sidebar a { color:#cbd5e1; display:block; padding:12px 20px; text-decoration:none; font-size:15px; }
+.sidebar a:hover, .sidebar a.active { background:#1e293b; color:#fff; border-left:4px solid #3b82f6; }
+.stat { border-radius:14px; padding:20px; color:#fff; }
+.bg-blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8);}
+.bg-green{background:linear-gradient(135deg,#10b981,#059669);}
+.bg-orange{background:linear-gradient(135deg,#f59e0b,#d97706);}
+.bg-purple{background:linear-gradient(135deg,#8b5cf6,#6d28d9);}
+.card { border-radius:12px; border:none; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+.prod-card { border-radius:12px; transition:.2s; cursor:pointer; }
+.prod-card:hover { transform:translateY(-4px); box-shadow:0 10px 20px rgba(0,0,0,.15); }
+.prod-foto { width:100%; height:140px; object-fit:cover; border-radius:10px; background:#e2e8f0; }
+.thumb { width:56px; height:56px; object-fit:cover; border-radius:8px; background:#e2e8f0; }
+#reader video { border-radius:12px; }
+.hidden { display:none !important; }
+@media (max-width:768px){ .sidebar { min-height:auto; } }
 </style>
 </head>
 <body>
 
-<div id="loginScreen">
-  <div class="card">
-    <h1 style="text-align:center; margin-bottom: 24px;">📀 CD Shop</h1>
-    <div style="margin-bottom: 12px;">
-      <label>Email</label>
-      <input type="email" id="loginEmail" placeholder="email@example.com">
+<!-- ============ LOGIN ============ -->
+<div id="loginView" class="login-wrap">
+  <div class="card p-4">
+    <h3 class="text-center mb-4">🏪 Sistemi i Dyqanit</h3>
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input id="loginEmail" type="email" class="form-control form-control-lg" placeholder="admin@dyqani.com">
     </div>
-    <div style="margin-bottom: 16px;">
-      <label>Fjalëkalimi</label>
-      <input type="password" id="loginPassword" placeholder="••••••••">
+    <div class="mb-3">
+      <label class="form-label">Fjalëkalimi</label>
+      <input id="loginPass" type="password" class="form-control form-control-lg">
     </div>
-    <button style="width:100%" onclick="doLogin()" id="loginBtn">Hyr</button>
-    <p id="loginError" class="negative" style="margin-top:12px; font-size:13px; text-align:center;"></p>
+    <button class="btn btn-primary btn-lg w-100" onclick="login()">Kyçu</button>
+    <div id="loginMsg" class="text-danger mt-2 text-center"></div>
   </div>
 </div>
 
-<div id="app" class="container hidden">
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 20px;">
-    <div>
-      <h1>📀 CD Shop Manager</h1>
-      <p class="subtitle" id="roleSubtitle">Duke ngarkuar...</p>
+<!-- ============ APP ============ -->
+<div id="appView" class="hidden">
+<div class="container-fluid">
+<div class="row">
+
+  <!-- SIDEBAR -->
+  <div class="col-md-2 sidebar">
+    <div class="brand">
+      <h5 class="mb-0">🏪 Dyqani</h5>
+      <small class="text-secondary" id="userInfo"></small>
     </div>
-    <div class="user-info">
-      <div class="user-avatar" id="userAvatar">?</div>
-      <div style="text-align:right;">
-        <div id="userNameDisplay" style="font-size:14px; font-weight:600;"></div>
-        <div id="userRoleDisplay" style="font-size:12px; color:#94a3b8;"></div>
-      </div>
-      <button class="btn-secondary btn-sm" onclick="doLogout()">Dil</button>
-    </div>
+    <nav id="navMenu"></nav>
   </div>
 
-  <div class="tabs" id="tabsBar">
-    <button class="tab active" data-tab="dashboard">📊 Përmbledhje</button>
-    <button class="tab" data-tab="sales">💰 Shitje</button>
-    <button class="tab" data-tab="stock" data-admin-only>📦 Hyrje Malli</button>
-    <button class="tab" data-tab="products" data-admin-only>💿 Produkte</button>
-    <button class="tab" data-tab="workers" data-admin-only>👥 Punëtorë</button>
-    <button class="tab" data-tab="reports" data-admin-only>📈 Raporte</button>
-  </div>
+  <!-- MAIN -->
+  <div class="col-md-10 p-4" id="mainContent"></div>
 
-  <!-- DASHBOARD -->
-  <div class="panel active" id="panel-dashboard">
-    <div class="card">
-      <h2 id="dashboardTitle">Raporti i ditës: <span id="todayDate"></span></h2>
-      <div class="grid grid-3" id="statsToday"></div>
-    </div>
-    <div class="card">
-      <h2 id="recentSalesTitle">Shitjet e fundit</h2>
-      <div id="recentSales"></div>
-    </div>
-  </div>
-
-  <!-- SALES -->
-  <div class="panel" id="panel-sales">
-    <div class="card">
-      <h2>➕ Regjistro shitje</h2>
-      <div class="form-row">
-        <div id="saleWorkerWrap">
-          <label>Punëtori</label>
-          <select id="saleWorker"></select>
-        </div>
-        <div><label>Data</label><input type="date" id="saleDate"></div>
-      </div>
-
-      <label style="margin-top: 8px;">Zgjidh produktin</label>
-      <input type="text" id="saleSearch" placeholder="🔍 Kërko produkt..." style="margin-bottom:12px;">
-      <div class="product-grid" id="saleProductGrid"></div>
-
-      <div class="form-row" style="margin-top: 16px;">
-        <div><label>Sasia</label><input type="number" id="saleQty" value="1" min="1"></div>
-        <div><label>Çmimi (€)</label><input type="number" id="salePrice" step="0.01" min="0"></div>
-      </div>
-      <button onclick="addSale()" id="saleBtn">Regjistro shitjen</button>
-    </div>
-    <div class="card">
-      <h2>Shitjet <span id="salesFilter"></span></h2>
-      <div id="salesList"></div>
-    </div>
-  </div>
-
-  <!-- STOCK -->
-  <div class="panel" id="panel-stock">
-    <div class="card">
-      <h2>➕ Hyrje mall i re</h2>
-      <div class="form-row">
-        <div>
-          <label>Kategoria</label>
-          <select id="stockCategoryFilter" onchange="filterStockProducts()"></select>
-        </div>
-        <div>
-          <label>Produkti</label>
-          <select id="stockProduct"></select>
-        </div>
-        <div><label>Sasia</label><input type="number" id="stockQty" value="1" min="1"></div>
-        <div><label>Çmimi shitje (€)</label><input type="number" id="stockPrice" step="0.01" min="0" placeholder="Çmimi i shitjes"></div>
-        <div><label>Data</label><input type="date" id="stockDate"></div>
-      </div>
-      <button onclick="addStock()">Regjistro hyrjen</button>
-      <p style="font-size:12px; color:#94a3b8; margin-top:10px;">
-        ℹ️ Çmimi që vendos këtu do të përditësojë çmimin e shitjes së produktit.
-      </p>
-    </div>
-    <div class="card">
-      <h2>Hyrjet e mallit</h2>
-      <div id="stockList"></div>
-    </div>
-  </div>
-
-  <!-- PRODUCTS -->
-  <div class="panel" id="panel-products">
-    <div class="card">
-      <h2>➕ Shto produkt</h2>
-      <div class="form-row">
-        <div><label>Emri i produktit</label><input type="text" id="prodName" placeholder="p.sh. USB 32GB Sandisk"></div>
-        <div>
-          <label>Kategoria</label>
-          <select id="prodCategory"></select>
-        </div>
-        <div><label>Çmimi shitje (€)</label><input type="number" id="prodPrice" step="0.01" min="0"></div>
-      </div>
-      <div style="margin-bottom: 12px;">
-        <label>Foto e produktit</label>
-        <div class="image-upload-area" onclick="document.getElementById('prodImage').click()">
-          <div id="prodImagePreview" class="image-preview-empty">📷</div>
-          <div>
-            <div style="font-size:14px; font-weight:600;">Kliko për të ngarkuar foto</div>
-            <div style="font-size:12px; color:#94a3b8;">JPG, PNG ose WEBP (max 5MB)</div>
-          </div>
-        </div>
-        <input type="file" id="prodImage" accept="image/*" style="display:none" onchange="previewProductImage(event)">
-      </div>
-      <button onclick="addProduct()">Shto produktin</button>
-    </div>
-    <div class="card">
-      <h2>Lista e produkteve</h2>
-      <div style="margin-bottom:12px;">
-        <input type="text" id="prodSearch" placeholder="🔍 Kërko produkt..." oninput="renderProducts()">
-      </div>
-      <div id="productsList"></div>
-    </div>
-  </div>
-
-  <!-- WORKERS -->
-  <div class="panel" id="panel-workers">
-    <div class="card">
-      <h2>➕ Shto punëtor</h2>
-      <div class="form-row">
-        <div><label>Emri</label><input type="text" id="workerName" placeholder="Emri i plotë"></div>
-        <div><label>Email</label><input type="email" id="workerEmail" placeholder="email@example.com"></div>
-        <div>
-          <label>Roli</label>
-          <select id="workerRole">
-            <option value="worker">Punëtor (vetëm shitje)</option>
-            <option value="admin">Admin (akses i plotë)</option>
-          </select>
-        </div>
-      </div>
-      <button onclick="addWorker()">Shto punëtorin</button>
-      <p style="font-size:12px; color:#94a3b8; margin-top:10px;">
-        ⚠️ Pas shtimit, krijo user në Supabase Auth me të njëjtin email + fjalëkalim.
-      </p>
-    </div>
-    <div class="card">
-      <h2>Punëtorët</h2>
-      <div id="workersList"></div>
-    </div>
-  </div>
-
-  <!-- REPORTS -->
-  <div class="panel" id="panel-reports">
-    <div class="card">
-      <h2>📈 Raporti Ditor</h2>
-      <div class="form-row">
-        <div><label>Zgjidh datën</label><input type="date" id="reportDate" onchange="loadDailyReport()"></div>
-      </div>
-    </div>
-    <div id="dailyReport"></div>
-
-    <div class="card">
-      <h2>📊 Raporti i periudhës</h2>
-      <div class="form-row">
-        <div><label>Nga data</label><input type="date" id="rangeFrom"></div>
-        <div><label>Deri data</label><input type="date" id="rangeTo"></div>
-        <button onclick="loadRangeReport()" style="align-self: flex-end;">Gjenero</button>
-      </div>
-    </div>
-    <div id="rangeReport"></div>
-  </div>
+</div>
+</div>
 </div>
 
-<div id="toast"></div>
+<!-- MODAL -->
+<div class="modal fade" id="modal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content" id="modalContent"></div></div></div>
 
 <script>
-// ==================== CONFIG ====================
+// =====================================================
+// KONFIGURIMI - NDRYSHO KËTO ME TË DHËNAT E PROJEKTIT TËND
+// =====================================================
 const SUPABASE_URL = 'https://rhkaqtpfhcyajyslnvln.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa2FxdHBmaGN5YWp5c2xudmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3Mzc1OTQsImV4cCI6MjA5MDMxMzU5NH0.oaObjuascv482VGXD7p-loOZY048mt1LbwJlWcZyCSE';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa2FxdHBmaGN5YWp5c2xudmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3Mzc1OTQsImV4cCI6MjA5MDMxMzU5NH0.oaObjuascv482VGXD7p-loOZY048mt1LbwJlWcZyCSE';
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let currentUser = null;
-let currentWorker = null;
-let selectedProductId = null;
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// KATEGORITË FIKSE
-const CATEGORIES = [
-  'USB',
-  'CD',
-  'SD Card',
-  'Adapter',
-  'Kablla',
-  'Zmadhues Zëri',
-  'Qanta',
-  'Aksesorë të Tjera'
-];
+let USER = null;       // { id, email, emri, roli }
+let SHporta = [];
+let scanner = null;
+let currentPage = 'shitje';
 
-// ==================== HELPERS ====================
-function toast(msg, isError = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show' + (isError ? ' error' : '');
-  setTimeout(() => t.className = '', 2200);
-}
-function today() { return new Date().toISOString().split('T')[0]; }
-function fmt(n) { return Number(n || 0).toFixed(2); }
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
-}
-function setLoading(btn, loading) {
-  if (!btn) return;
-  btn.disabled = loading;
-  btn.dataset.text = btn.dataset.text || btn.textContent;
-  btn.textContent = loading ? 'Duke procesuar...' : btn.dataset.text;
-}
-function isAdmin() { return currentWorker?.role === 'admin'; }
-
-function populateCategories() {
-  const opts = '<option value="">-- Zgjidh kategorinë --</option>' +
-    CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
-  const optsAll = '<option value="">Të gjitha kategoritë</option>' +
-    CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
-  const pc = document.getElementById('prodCategory');
-  if (pc) pc.innerHTML = opts;
-  const sc = document.getElementById('stockCategoryFilter');
-  if (sc) sc.innerHTML = optsAll;
-}
-
-// ==================== AUTH ====================
-async function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const password = document.getElementById('loginPassword').value;
-  const err = document.getElementById('loginError');
-  err.textContent = '';
-  setLoading(document.getElementById('loginBtn'), true);
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+// =====================================================
+// LOGIN / LOGOUT
+// =====================================================
+async function login() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  document.getElementById('loginMsg').textContent = '';
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
   if (error) {
-    setLoading(document.getElementById('loginBtn'), false);
-    err.textContent = error.message;
+    document.getElementById('loginMsg').textContent = '❌ ' + error.message;
     return;
   }
-  currentUser = data.user;
-  await loadWorkerAndShowApp();
+  await loadUser();
 }
 
-async function loadWorkerAndShowApp() {
-  const email = currentUser.email.toLowerCase();
-  const { data, error } = await supabaseClient
-    .from('workers').select('*').eq('email', email).maybeSingle();
-
-  if (error) {
-    document.getElementById('loginError').textContent = 'Gabim: ' + error.message;
-    setLoading(document.getElementById('loginBtn'), false);
-    return;
-  }
-  if (!data) {
-    document.getElementById('loginError').textContent =
-      'Ky user nuk është regjistruar si punëtor. Kontakto adminin.';
-    await supabaseClient.auth.signOut();
-    setLoading(document.getElementById('loginBtn'), false);
-    return;
-  }
-  currentWorker = data;
-  setLoading(document.getElementById('loginBtn'), false);
-  showApp();
+async function loadUser() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return showLogin();
+  const { data: prof } = await db.from('profiles').select('*').eq('id', user.id).single();
+  USER = { id: user.id, email: user.email, emri: prof?.emri || user.email, roli: prof?.roli || 'punetor' };
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('appView').classList.remove('hidden');
+  document.getElementById('userInfo').textContent = `${USER.emri} (${USER.roli})`;
+  buildNav();
+  navigate('shitje');
 }
 
-async function doLogout() {
-  await supabaseClient.auth.signOut();
-  currentUser = null;
-  currentWorker = null;
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('loginScreen').classList.remove('hidden');
+async function logout() {
+  await db.auth.signOut();
+  USER = null;
+  showLogin();
 }
 
-function showApp() {
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-
-  const initial = (currentWorker.name || '?').charAt(0).toUpperCase();
-  document.getElementById('userAvatar').textContent = initial;
-  document.getElementById('userNameDisplay').textContent = currentWorker.name;
-  document.getElementById('userRoleDisplay').innerHTML = isAdmin()
-    ? '<span class="badge badge-admin">ADMIN</span>'
-    : '<span class="badge badge-worker">PUNËTOR</span>';
-  document.getElementById('roleSubtitle').textContent = isAdmin()
-    ? 'Akses i plotë'
-    : 'Akses i kufizuar — vetëm shitjet e tua';
-
-  document.querySelectorAll('[data-admin-only]').forEach(el => {
-    el.classList.toggle('hidden', !isAdmin());
-  });
-
-  if (!isAdmin()) {
-    document.getElementById('saleWorkerWrap').classList.add('hidden');
-    document.getElementById('salesFilter').textContent = '— vetëm të tuat';
-  }
-
-  populateCategories();
-  document.getElementById('todayDate').textContent = today();
-  document.getElementById('saleDate').value = today();
-  document.getElementById('stockDate').value = today();
-  document.getElementById('reportDate').value = today();
-
-  refreshAll();
-  setupRealtime();
+function showLogin() {
+  document.getElementById('appView').classList.add('hidden');
+  document.getElementById('loginView').classList.remove('hidden');
 }
 
-// ==================== DATA ====================
-async function fetchWorkers() {
-  const { data } = await supabaseClient.from('workers').select('*').order('id');
-  return data || [];
-}
-async function fetchProducts() {
-  const { data } = await supabaseClient.from('products').select('*').order('name');
-  return data || [];
-}
-async function fetchSales(limit = 100) {
-  let q = supabaseClient.from('sales')
-    .select(`*, workers(name), products(name, image_url)`)
-    .order('date', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(limit);
-  if (!isAdmin()) q = q.eq('worker_id', currentWorker.id);
-  const { data } = await q;
-  return data || [];
-}
-async function fetchStock(limit = 100) {
-  const { data } = await supabaseClient.from('stock_entries')
-    .select(`*, workers(name), products(name, image_url)`)
-    .order('date', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(limit);
-  return data || [];
-}
-async function fetchSalesByDate(date) {
-  let q = supabaseClient.from('sales')
-    .select(`*, workers(name), products(name)`)
-    .eq('date', date);
-  if (!isAdmin()) q = q.eq('worker_id', currentWorker.id);
-  const { data } = await q;
-  return data || [];
+// =====================================================
+// NAVIGIMI
+// =====================================================
+function buildNav() {
+  const adminLinks = `
+    <a href="#" onclick="navigate('dashboard')" id="nav-dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="#" onclick="navigate('produktet')" id="nav-produktet"><i class="bi bi-box-seam"></i> Produktet</a>
+    <a href="#" onclick="navigate('stok')" id="nav-stok"><i class="bi bi-clipboard-data"></i> Stoku</a>
+    <a href="#" onclick="navigate('raporte')" id="nav-raporte"><i class="bi bi-bar-chart"></i> Raporte</a>
+    <a href="#" onclick="navigate('perdoruesit')" id="nav-perdoruesit"><i class="bi bi-people"></i> Përdoruesit</a>
+  `;
+  const workerLinks = `
+    <a href="#" onclick="navigate('shitje')" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>
+  `;
+  document.getElementById('navMenu').innerHTML =
+    (USER.roli === 'admin' ? adminLinks : workerLinks) +
+    `<a href="#" onclick="logout()" class="text-danger"><i class="bi bi-box-arrow-right"></i> Dil</a>`;
 }
 
-// ==================== RENDER ====================
-async function refreshAll() {
-  await Promise.all([
-    loadWorkersDropdowns(),
-    renderProductGrid(),
-    renderWorkers(),
-    renderProducts(),
-    renderSales(),
-    renderStock(),
-    renderDashboard(),
-    loadDailyReport()
-  ]);
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('#navMenu a').forEach(a => a.classList.remove('active'));
+  const el = document.getElementById('nav-' + page);
+  if (el) el.classList.add('active');
+  if (page === 'shitje') renderShitje();
+  if (page === 'dashboard' && USER.roli === 'admin') renderDashboard();
+  if (page === 'produktet' && USER.roli === 'admin') renderProduktet();
+  if (page === 'stok' && USER.roli === 'admin') renderStok();
+  if (page === 'raporte' && USER.roli === 'admin') renderRaporte();
+  if (page === 'perdoruesit' && USER.roli === 'admin') renderPerdoruesit();
 }
 
-async function loadWorkersDropdowns() {
-  const workers = await fetchWorkers();
-  const opts = workers.map(w => `<option value="${w.id}">${escapeHtml(w.name)}</option>`).join('');
-  const el = document.getElementById('saleWorker');
-  if (el) el.innerHTML = opts;
-  if (!isAdmin() && el) el.value = currentWorker.id;
-}
-
-async function renderProductGrid() {
-  const products = await fetchProducts();
-  const search = (document.getElementById('saleSearch')?.value || '').toLowerCase();
-  const filtered = products.filter(p => 
-    !search || p.name.toLowerCase().includes(search) || (p.category || '').toLowerCase().includes(search)
-  );
-  const el = document.getElementById('saleProductGrid');
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty">Nuk ka produkte</div>';
-    return;
-  }
-  el.innerHTML = filtered.map(p => `
-    <div class="product-card ${selectedProductId === p.id ? 'selected' : ''}" 
-         onclick="selectProduct(${p.id}, ${p.price})"
-         data-pid="${p.id}">
-      ${p.image_url 
-        ? `<img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name)}">`
-        : `<div class="no-img">📀</div>`}
-      <div class="p-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
-      <div class="p-price">€${fmt(p.price)}</div>
-      <div class="p-stock ${p.stock < 5 ? 'negative' : ''}">Stok: ${p.stock}</div>
-    </div>
-  `).join('');
-}
-
-function selectProduct(id, price) {
-  selectedProductId = id;
-  document.getElementById('salePrice').value = price;
-  document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
-  document.querySelector(`.product-card[data-pid="${id}"]`)?.classList.add('selected');
-}
-
-function filterStockProducts() {
-  // Rifresko dropdown-in e produkteve sipas kategorisë
-  const cat = document.getElementById('stockCategoryFilter').value;
-  fetchProducts().then(products => {
-    const filtered = cat ? products.filter(p => p.category === cat) : products;
-    const opts = filtered.length 
-      ? filtered.map(p => `<option value="${p.id}" data-price="${p.price}">${escapeHtml(p.name)} (stok: ${p.stock})</option>`).join('')
-      : '<option value="">-- Nuk ka produkte në këtë kategori --</option>';
-    document.getElementById('stockProduct').innerHTML = opts;
-  });
-}
-
-async function renderWorkers() {
-  if (!isAdmin()) return;
-  const workers = await fetchWorkers();
-  const el = document.getElementById('workersList');
-  if (!workers.length) { el.innerHTML = '<div class="empty">Nuk ka punëtorë</div>'; return; }
-  el.innerHTML = `<table><thead><tr><th>Emri</th><th>Email</th><th>Roli</th><th>Veprime</th></tr></thead><tbody>
-    ${workers.map(w => `<tr>
-      <td>${escapeHtml(w.name)}</td>
-      <td>${escapeHtml(w.email || '—')}</td>
-      <td><span class="badge ${w.role === 'admin' ? 'badge-admin' : 'badge-worker'}">${w.role?.toUpperCase() || 'WORKER'}</span></td>
-      <td>${w.id !== currentWorker.id ? `<button class="btn-danger btn-sm" onclick="deleteWorker(${w.id})">Fshi</button>` : '<span style="font-size:12px;color:#94a3b8;">Ti</span>'}</td>
-    </tr>`).join('')}
-  </tbody></table>`;
-}
-
-async function renderProducts() {
-  if (!isAdmin()) return;
-  const products = await fetchProducts();
-  const search = (document.getElementById('prodSearch')?.value || '').toLowerCase();
-  const filtered = products.filter(p => 
-    !search || p.name.toLowerCase().includes(search) || (p.category || '').toLowerCase().includes(search)
-  );
-  const el = document.getElementById('productsList');
-  if (!filtered.length) { el.innerHTML = '<div class="empty">Nuk ka produkte</div>'; return; }
-  el.innerHTML = `<table><thead><tr>
-    <th>Foto</th><th>Emri</th><th>Kategoria</th><th>Çmimi</th><th>Stoku</th><th></th>
-  </tr></thead><tbody>
-    ${filtered.map(p => `<tr>
-      <td>${p.image_url 
-        ? `<img src="${escapeHtml(p.image_url)}" class="prod-thumb" alt="">`
-        : `<div class="prod-thumb-empty">📀</div>`}</td>
-      <td>${escapeHtml(p.name)}</td>
-      <td><span class="badge badge-cat">${escapeHtml(p.category || '—')}</span></td>
-      <td>€${fmt(p.price)}</td>
-      <td>${p.stock < 5 ? `<span class="negative">${p.stock}</span>` : p.stock}</td>
-      <td>
-        <button class="btn-secondary btn-sm" onclick="editProduct(${p.id})">✏️</button>
-        <button class="btn-danger btn-sm" onclick="deleteProduct(${p.id})">🗑️</button>
-      </td>
-    </tr>`).join('')}
-  </tbody></table>`;
-}
-
-async function renderSales() {
-  const sales = await fetchSales();
-  const el = document.getElementById('salesList');
-  if (!sales.length) { el.innerHTML = '<div class="empty">Nuk ka shitje</div>'; return; }
-  el.innerHTML = `<table><thead><tr>
-    <th>Foto</th><th>Data</th>${isAdmin() ? '<th>Punëtori</th>' : ''}<th>Produkti</th><th>Sasia</th><th>Totali</th><th></th>
-  </tr></thead><tbody>
-    ${sales.map(s => `<tr>
-      <td>${s.products?.image_url 
-        ? `<img src="${escapeHtml(s.products.image_url)}" class="prod-thumb" alt="">`
-        : `<div class="prod-thumb-empty">📀</div>`}</td>
-      <td>${s.date}</td>
-      ${isAdmin() ? `<td>${escapeHtml(s.workers?.name || '?')}</td>` : ''}
-      <td>${escapeHtml(s.products?.name || '?')}</td>
-      <td>${s.qty}</td>
-      <td><b>€${fmt(s.qty * s.price)}</b></td>
-      <td>${isAdmin() || s.worker_id === currentWorker.id ? `<button class="btn-danger btn-sm" onclick="deleteSale(${s.id})">✕</button>` : ''}</td>
-    </tr>`).join('')}
-  </tbody></table>`;
-}
-
-async function renderStock() {
-  if (!isAdmin()) return;
-  const rows = await fetchStock();
-  const el = document.getElementById('stockList');
-  if (!rows.length) { el.innerHTML = '<div class="empty">Nuk ka hyrje malli</div>'; return; }
-  el.innerHTML = `<table><thead><tr>
-    <th>Foto</th><th>Data</th><th>Produkti</th><th>Sasia</th><th>Çmimi</th><th>Totali</th><th></th>
-  </tr></thead><tbody>
-    ${rows.map(s => `<tr>
-      <td>${s.products?.image_url 
-        ? `<img src="${escapeHtml(s.products.image_url)}" class="prod-thumb" alt="">`
-        : `<div class="prod-thumb-empty">📀</div>`}</td>
-      <td>${s.date}</td>
-      <td>${escapeHtml(s.products?.name || '?')}</td>
-      <td><span class="badge badge-in">+${s.qty}</span></td>
-      <td>€${fmt(s.cost)}</td>
-      <td>€${fmt(s.qty * s.cost)}</td>
-      <td><button class="btn-danger btn-sm" onclick="deleteStock(${s.id})">✕</button></td>
-    </tr>`).join('')}
-  </tbody></table>`;
-}
-
+// =====================================================
+// DASHBOARD
+// =====================================================
 async function renderDashboard() {
-  const d = today();
-  const sales = await fetchSalesByDate(d);
-  const totalSales = sales.reduce((a, s) => a + s.qty * s.price, 0);
-  const totalQty = sales.reduce((a, s) => a + s.qty, 0);
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = '<p>Duke u ngarkuar...</p>';
+  const sot = new Date().toISOString().slice(0,10);
+  const { count: cProd } = await db.from('produktet').select('*', { count:'exact', head:true });
+  const { data: stokData } = await db.from('produktet').select('sasia');
+  const totalStok = (stokData||[]).reduce((s,p)=>s+p.sasia, 0);
+  const { data: shitjetSot } = await db.from('shitjet').select('totali').gte('krijuar_me', sot);
+  const totalSot = (shitjetSot||[]).reduce((s,x)=>s+Number(x.totali), 0);
+  const { data: stokPak } = await db.from('produktet').select('*').lt('sasia',5).order('sasia').limit(10);
 
-  document.getElementById('dashboardTitle').innerHTML = isAdmin()
-    ? `Raporti i ditës: <span>${d}</span>`
-    : `Shitjet e mia — ${d}`;
-
-  let html = '';
-  if (isAdmin()) {
-    const workers = await fetchWorkers();
-    html += `<div class="stat total">
-      <div class="stat-label">Totali i ditës</div>
-      <div class="stat-value">€${fmt(totalSales)}</div>
-      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${totalQty} CD të shitura</div>
+  mc.innerHTML = `
+    <h3 class="mb-4">📊 Dashboard</h3>
+    <div class="row g-3 mb-4">
+      <div class="col-md-4"><div class="stat bg-blue"><h6>Produkte</h6><h2>${cProd||0}</h2></div></div>
+      <div class="col-md-4"><div class="stat bg-green"><h6>Copë në stok</h6><h2>${totalStok}</h2></div></div>
+      <div class="col-md-4"><div class="stat bg-orange"><h6>Shitje sot</h6><h2>${totalSot.toFixed(2)} €</h2></div></div>
+    </div>
+    <div class="card p-3">
+      <h5>⚠️ Produkte me stok të ulët (&lt; 5)</h5>
+      ${(stokPak&&stokPak.length) ? `
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Emri</th><th>Barkodi</th><th>Sasia</th></tr></thead>
+        <tbody>${stokPak.map(p=>`<tr><td>${p.emri}</td><td><code>${p.barkodi}</code></td>
+          <td><span class="badge bg-danger">${p.sasia}</span></td></tr>`).join('')}</tbody>
+      </table>` : '<p class="text-muted">Të gjitha produktet kanë stok të mjaftueshëm ✅</p>'}
     </div>`;
-    workers.forEach(w => {
-      const ws = sales.filter(s => s.worker_id === w.id);
-      const amt = ws.reduce((a, s) => a + s.qty * s.price, 0);
-      const q = ws.reduce((a, s) => a + s.qty, 0);
-      html += `<div class="stat worker">
-        <div class="stat-label">${escapeHtml(w.name)}</div>
-        <div class="stat-value">€${fmt(amt)}</div>
-        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${q} shitje</div>
-      </div>`;
-    });
-  } else {
-    html = `<div class="stat worker">
-      <div class="stat-label">Shitjet e mia sot</div>
-      <div class="stat-value">€${fmt(totalSales)}</div>
-      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${totalQty} CD të shitura</div>
-    </div>`;
-  }
-  document.getElementById('statsToday').innerHTML = html;
-
-  document.getElementById('recentSalesTitle').textContent = isAdmin() ? 'Shitjet e fundit' : 'Shitjet e mia të fundit';
-  const recent = await fetchSales(10);
-  const el = document.getElementById('recentSales');
-  if (!recent.length) { el.innerHTML = '<div class="empty">Nuk ka shitje</div>'; return; }
-  el.innerHTML = `<table><thead><tr><th>Foto</th><th>Data</th>${isAdmin() ? '<th>Punëtori</th>' : ''}<th>Produkti</th><th>Sasia</th><th>Totali</th></tr></thead><tbody>
-    ${recent.map(s => `<tr>
-      <td>${s.products?.image_url 
-        ? `<img src="${escapeHtml(s.products.image_url)}" class="prod-thumb" alt="">`
-        : `<div class="prod-thumb-empty">📀</div>`}</td>
-      <td>${s.date}</td>
-      ${isAdmin() ? `<td>${escapeHtml(s.workers?.name || '?')}</td>` : ''}
-      <td>${escapeHtml(s.products?.name || '?')}</td>
-      <td>${s.qty}</td>
-      <td><b>€${fmt(s.qty * s.price)}</b></td>
-    </tr>`).join('')}
-  </tbody></table>`;
 }
 
-// ==================== IMAGE UPLOAD ====================
-let pendingImageFile = null;
+// =====================================================
+// PRODUKTET
+// =====================================================
+async function renderProduktet() {
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = `
+    <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+      <h3>📦 Produktet</h3>
+      <button class="btn btn-primary" onclick="formProdukt()"><i class="bi bi-plus-lg"></i> Shto Produkt</button>
+    </div>
+    <div class="input-group mb-3">
+      <input id="searchProd" class="form-control" placeholder="Kërko sipas emrit, barkodit, kategorisë..." oninput="loadProduktet()">
+    </div>
+    <div class="row g-3" id="prodGrid"></div>`;
+  loadProduktet();
+}
 
-function previewProductImage(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    toast('Foto është shumë e madhe (max 5MB)', true);
+async function loadProduktet() {
+  const q = document.getElementById('searchProd')?.value.trim() || '';
+  let query = db.from('produktet').select('*').order('emri');
+  if (q) query = query.or(`emri.ilike.%${q}%,barkodi.ilike.%${q}%,kategoria.ilike.%${q}%`);
+  const { data } = await query;
+  const grid = document.getElementById('prodGrid');
+  if (!data || !data.length) { grid.innerHTML = '<p class="text-muted">Nuk ka produkte.</p>'; return; }
+  grid.innerHTML = data.map(p => `
+    <div class="col-md-4 col-lg-3">
+      <div class="card prod-card p-2">
+        ${p.foto_url ? `<img src="${p.foto_url}" class="prod-foto mb-2">`
+                    : `<div class="prod-foto mb-2 d-flex align-items-center justify-content-center"><i class="bi bi-image fs-1 text-muted"></i></div>`}
+        <b>${p.emri}</b>
+        <small class="text-muted">${p.kategoria||'-'} • <code>${p.barkodi}</code></small>
+        <div class="d-flex justify-content-between mt-2 align-items-center">
+          <span class="fw-bold text-success">${Number(p.cmimi_shitjes).toFixed(2)} €</span>
+          <span class="badge ${p.sasia<5?'bg-danger':'bg-success'}">Stok: ${p.sasia}</span>
+        </div>
+        <div class="mt-2 d-flex gap-1">
+          <button class="btn btn-sm btn-warning flex-fill" onclick='formProdukt(${JSON.stringify(p).replace(/'/g,"&#39;")})'><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-danger flex-fill" onclick="fshiProdukt(${p.id})"><i class="bi bi-trash"></i></button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function formProdukt(p = null) {
+  const edit = !!p;
+  const ktg = ['CD','USB','SD Card','Zmadhues Zëri','Aksesor','Adapter','Kabllo Telefoni','Çanta','Tjetër'];
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header"><h5>${edit?'Edito':'Shto'} Produkt</h5>
+      <button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Barkodi (SKU)*</label>
+          <input id="f_barkodi" class="form-control" value="${p?.barkodi||''}" ${edit?'readonly':''}></div>
+        <div class="col-md-6"><label class="form-label">Emri*</label>
+          <input id="f_emri" class="form-control" value="${p?.emri||''}"></div>
+        <div class="col-md-6"><label class="form-label">Kategoria</label>
+          <select id="f_kategoria" class="form-select">
+            ${ktg.map(k=>`<option ${p?.kategoria===k?'selected':''}>${k}</option>`).join('')}
+          </select></div>
+        <div class="col-md-3"><label class="form-label">Blerje (€)</label>
+          <input id="f_blerjes" type="number" step="0.01" class="form-control" value="${p?.cmimi_blerjes||0}"></div>
+        <div class="col-md-3"><label class="form-label">Shitje (€)*</label>
+          <input id="f_shitjes" type="number" step="0.01" class="form-control" value="${p?.cmimi_shitjes||''}"></div>
+        <div class="col-md-4"><label class="form-label">Sasia*</label>
+          <input id="f_sasia" type="number" class="form-control" value="${p?.sasia||0}"></div>
+        <div class="col-md-8"><label class="form-label">Foto</label>
+          <input id="f_foto" type="file" accept="image/*" class="form-control"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Anulo</button>
+      <button class="btn btn-success" onclick="ruajProdukt(${p?.id||'null'})">💾 Ruaj</button>
+    </div>`;
+  new bootstrap.Modal('#modal').show();
+}
+
+async function ruajProdukt(id) {
+  const barkodi = document.getElementById('f_barkodi').value.trim();
+  const emri = document.getElementById('f_emri').value.trim();
+  const kategoria = document.getElementById('f_kategoria').value;
+  const cmimi_blerjes = parseFloat(document.getElementById('f_blerjes').value||0);
+  const cmimi_shitjes = parseFloat(document.getElementById('f_shitjes').value);
+  const sasia = parseInt(document.getElementById('f_sasia').value||0);
+  if (!barkodi || !emri || isNaN(cmimi_shitjes)) return alert('Plotëso fushat e detyrueshme!');
+
+  let foto_url = null;
+  const fileInput = document.getElementById('f_foto');
+  if (fileInput.files[0]) {
+    const file = fileInput.files[0];
+    const fn = `${barkodi}_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: upErr } = await db.storage.from('produktet').upload(fn, file);
+    if (upErr) return alert('Gabim foto: ' + upErr.message);
+    const { data: urlData } = db.storage.from('produktet').getPublicUrl(fn);
+    foto_url = urlData.publicUrl;
+  }
+
+  const payload = { barkodi, emri, kategoria, cmimi_blerjes, cmimi_shitjes, sasia };
+  if (foto_url) payload.foto_url = foto_url;
+
+  let err;
+  if (id) {
+    ({ error: err } = await db.from('produktet').update(payload).eq('id', id));
+  } else {
+    ({ error: err } = await db.from('produktet').insert(payload));
+  }
+  if (err) return alert('Gabim: ' + err.message);
+  bootstrap.Modal.getInstance(document.getElementById('modal')).hide();
+  loadProduktet();
+}
+
+async function fshiProdukt(id) {
+  if (!confirm('Fshij produktin?')) return;
+  const { error } = await db.from('produktet').delete().eq('id', id);
+  if (error) return alert(error.message);
+  loadProduktet();
+}
+
+// =====================================================
+// SHITJE (me skanim barkodi)
+// =====================================================
+function renderShitje() {
+  SHporta = [];
+  document.getElementById('mainContent').innerHTML = `
+    <h3 class="mb-3">🛒 Shitje</h3>
+    <div class="row g-3">
+      <div class="col-md-5">
+        <div class="card p-3">
+          <label class="fw-bold mb-2">Skano / Shkruaj barkodin:</label>
+          <div class="input-group mb-2">
+            <input id="barkodiInput" class="form-control form-control-lg" placeholder="Barkodi..." autocomplete="off">
+            <button class="btn btn-primary" onclick="kerkoBarkod()"><i class="bi bi-search"></i></button>
+          </div>
+          <button class="btn btn-outline-secondary w-100 mb-2" onclick="toggleScanner()">
+            <i class="bi bi-camera"></i> <span id="scannerBtnTxt">Skano me kamerë</span>
+          </button>
+          <div id="reader" class="hidden"></div>
+          <div id="produktInfo" class="mt-2"></div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card">
+          <div class="card-header bg-dark text-white">Shporta</div>
+          <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+              <thead><tr><th>Produkti</th><th>Çmimi</th><th>Sasia</th><th>Totali</th><th></th></tr></thead>
+              <tbody id="shportaBody"><tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h4 class="mb-0">Totali: <span id="totaliShitjes" class="text-success">0.00 €</span></h4>
+            <button class="btn btn-success btn-lg" onclick="perfundoSshitjen()">
+              <i class="bi bi-check-circle"></i> Përfundo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  const inp = document.getElementById('barkodiInput');
+  inp.focus();
+  inp.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); kerkoBarkod(); }});
+}
+
+async function kerkoBarkod() {
+  const inp = document.getElementById('barkodiInput');
+  const barkodi = inp.value.trim();
+  if (!barkodi) return;
+  const { data, error } = await db.from('produktet').select('*').eq('barkodi', barkodi).maybeSingle();
+  if (error || !data) {
+    document.getElementById('produktInfo').innerHTML = `<div class="alert alert-danger">❌ Produkti nuk u gjet!</div>`;
     return;
   }
-  pendingImageFile = file;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    document.getElementById('prodImagePreview').outerHTML = 
-      `<img id="prodImagePreview" src="${e.target.result}" class="image-preview" alt="">`;
-  };
-  reader.readAsDataURL(file);
+  document.getElementById('produktInfo').innerHTML = `
+    <div class="alert alert-success">
+      <b>${data.emri}</b><br>
+      Çmimi: ${Number(data.cmimi_shitjes).toFixed(2)} € • Stok: ${data.sasia}
+    </div>`;
+  shtoNeshport(data);
+  inp.value = '';
+  inp.focus();
 }
 
-async function uploadImage(file) {
-  if (!file) return null;
-  const ext = file.name.split('.').pop().toLowerCase();
-  const fileName = `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const { data, error } = await supabaseClient.storage
-    .from('product-images')
-    .upload(fileName, file, { cacheControl: '3600', upsert: false });
-  if (error) throw error;
-  const { data: urlData } = supabaseClient.storage
-    .from('product-images')
-    .getPublicUrl(fileName);
-  return urlData.publicUrl;
+function shtoNeshport(p) {
+  const ekziston = SHporta.find(x => x.id === p.id);
+  if (ekziston) {
+    if (ekziston.sasia >= p.sasia) return alert('Nuk ka stok të mjaftueshëm!');
+    ekziston.sasia++;
+  } else {
+    if (p.sasia < 1) return alert('Produkti nuk ka stok!');
+    SHporta.push({ id:p.id, emri:p.emri, cmimi:Number(p.cmimi_shitjes), sasia:1, stoku_max:p.sasia });
+  }
+  renderSshporta();
 }
 
-// ==================== ACTIONS ====================
-async function addWorker() {
-  if (!isAdmin()) return toast('Vetëm admini mund të shtojë punëtorë', true);
-  const name = document.getElementById('workerName').value.trim();
-  const email = document.getElementById('workerEmail').value.trim().toLowerCase();
-  const role = document.getElementById('workerRole').value;
-  if (!name || !email) return toast('Plotëso emrin dhe emailin', true);
-
-  const { error } = await supabaseClient.from('workers').insert({ name, email, role });
-  if (error) return toast(error.message, true);
-  document.getElementById('workerName').value = '';
-  document.getElementById('workerEmail').value = '';
-  toast('Punëtori u shtua. Krijo user në Supabase Auth.');
-  refreshAll();
+function renderSshporta() {
+  const tb = document.getElementById('shportaBody');
+  if (!SHporta.length) {
+    tb.innerHTML = '<tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr>';
+    document.getElementById('totaliShitjes').textContent = '0.00 €';
+    return;
+  }
+  tb.innerHTML = SHporta.map((it,i) => `
+    <tr>
+      <td>${it.emri}</td>
+      <td>${it.cmimi.toFixed(2)} €</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(${i},-1)">−</button>
+        <span class="mx-2">${it.sasia}</span>
+        <button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(${i},1)">+</button>
+      </td>
+      <td><b>${(it.cmimi*it.sasia).toFixed(2)} €</b></td>
+      <td><button class="btn btn-sm btn-danger" onclick="hiqNgaShporta(${i})"><i class="bi bi-x"></i></button></td>
+    </tr>`).join('');
+  const total = SHporta.reduce((s,x)=>s+x.cmimi*x.sasia, 0);
+  document.getElementById('totaliShitjes').textContent = total.toFixed(2) + ' €';
 }
 
-async function deleteWorker(id) {
-  if (!isAdmin()) return;
-  if (!confirm('Fshi punëtorin?')) return;
-  const { error } = await supabaseClient.from('workers').delete().eq('id', id);
-  if (error) return toast(error.message, true);
-  toast('U fshi');
-  refreshAll();
+function ndryshoSasi(i, delta) {
+  SHporta[i].sasia += delta;
+  if (SHporta[i].sasia < 1) SHporta.splice(i,1);
+  else if (SHporta[i].sasia > SHporta[i].stoku_max) {
+    SHporta[i].sasia = SHporta[i].stoku_max;
+    alert('Nuk ka stok të mjaftueshëm!');
+  }
+  renderSshporta();
 }
+function hiqNgaShporta(i) { SHporta.splice(i,1); renderSshporta(); }
 
-async function addProduct() {
-  if (!isAdmin()) return toast('Vetëm admini mund të shtojë produkte', true);
-  const name = document.getElementById('prodName').value.trim();
-  const category = document.getElementById('prodCategory').value;
-  const price = parseFloat(document.getElementById('prodPrice').value) || 0;
-  if (!name) return toast('Shkruaj emrin', true);
-  if (!category) return toast('Zgjidh kategorinë', true);
+async function perfundoSshitjen() {
+  if (!SHporta.length) return alert('Shporta është bosh!');
+  if (!confirm('Konfirmo shitjen?')) return;
 
-  const btn = event.target;
-  setLoading(btn, true);
-  try {
-    let imageUrl = null;
-    if (pendingImageFile) {
-      imageUrl = await uploadImage(pendingImageFile);
-    }
-    const { error } = await supabaseClient.from('products').insert({ 
-      name, category, price, stock: 0, image_url: imageUrl 
+  for (const it of SHporta) {
+    // Zvogëlo stokun
+    const { data: prod } = await db.from('produktet').select('sasia').eq('id', it.id).single();
+    if (!prod || prod.sasia < it.sasia) return alert(`Stok i pamjaftueshëm për ${it.emri}`);
+    const { error: e1 } = await db.from('produktet').update({ sasia: prod.sasia - it.sasia }).eq('id', it.id);
+    if (e1) return alert(e1.message);
+
+    // Regjistro shitjen
+    const { error: e2 } = await db.from('shitjet').insert({
+      produkt_id: it.id,
+      emri_produktit: it.emri,
+      sasia: it.sasia,
+      cmimi_njesi: it.cmimi,
+      totali: it.cmimi * it.sasia,
+      punetor_id: USER.id,
+      punetor_emri: USER.emri
     });
-    if (error) throw error;
+    if (e2) return alert(e2.message);
+  }
+  alert('✅ Shitja u regjistrua me sukses!');
+  renderShitje();
+}
 
-    // Reset form
-    document.getElementById('prodName').value = '';
-    document.getElementById('prodCategory').value = '';
-    document.getElementById('prodPrice').value = '';
-    document.getElementById('prodImage').value = '';
-    pendingImageFile = null;
-    document.getElementById('prodImagePreview').outerHTML = 
-      '<div id="prodImagePreview" class="image-preview-empty">📷</div>';
-
-    toast('Produkti u shtua');
-    refreshAll();
-  } catch (err) {
-    toast(err.message, true);
-  } finally {
-    setLoading(btn, false);
+// SKANERI I KAMERËS
+let scannerActive = false;
+async function toggleScanner() {
+  const div = document.getElementById('reader');
+  const txt = document.getElementById('scannerBtnTxt');
+  if (scannerActive) {
+    await scanner.stop(); scanner.clear(); scannerActive = false;
+    div.classList.add('hidden'); txt.textContent = 'Skano me kamerë'; scanner = null;
+    return;
+  }
+  div.classList.remove('hidden');
+  txt.textContent = 'Ndalo skanimin';
+  scanner = new Html5Qrcode("reader");
+  try {
+    await scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 150 } },
+      (text) => {
+        document.getElementById('barkodiInput').value = text;
+        kerkoBarkod();
+        // dridhje për feedback
+        if (navigator.vibrate) navigator.vibrate(80);
+      }, () => {}
+    );
+    scannerActive = true;
+  } catch (e) {
+    alert('Gabim kamera: ' + e.message);
+    div.classList.add('hidden'); txt.textContent = 'Skano me kamerë';
   }
 }
 
-async function editProduct(id) {
-  const { data: p } = await supabaseClient.from('products').select('*').eq('id', id).single();
-  if (!p) return;
-  const newName = prompt('Emri i ri:', p.name);
-  if (newName === null) return;
-  const newPrice = prompt('Çmimi i ri (€):', p.price);
-  if (newPrice === null) return;
-  const newCategory = prompt('Kategoria e re:\n' + CATEGORIES.join(', '), p.category);
-  if (newCategory === null) return;
-
-  const { error } = await supabaseClient.from('products').update({
-    name: newName.trim() || p.name,
-    price: parseFloat(newPrice) || p.price,
-    category: newCategory.trim() || p.category
-  }).eq('id', id);
-  if (error) return toast(error.message, true);
-  toast('Produkti u përditësua');
-  refreshAll();
-}
-
-async function deleteProduct(id) {
-  if (!isAdmin()) return;
-  if (!confirm('Fshi produktin?')) return;
-  const { error } = await supabaseClient.from('products').delete().eq('id', id);
-  if (error) return toast(error.message, true);
-  toast('U fshi');
-  refreshAll();
-}
-
-async function addSale() {
-  if (!selectedProductId) return toast('Zgjidh një produkt', true);
-  const worker_id = isAdmin()
-    ? parseInt(document.getElementById('saleWorker').value)
-    : currentWorker.id;
-  const product_id = selectedProductId;
-  const qty = parseInt(document.getElementById('saleQty').value);
-  const price = parseFloat(document.getElementById('salePrice').value);
-  const date = document.getElementById('saleDate').value;
-
-  if (!worker_id || !product_id || !qty || isNaN(price)) return toast('Plotëso të gjitha fushat', true);
-  if (qty <= 0) return toast('Sasia duhet > 0', true);
-
-  const { data: prod } = await supabaseClient.from('products').select('stock, name').eq('id', product_id).single();
-  if (prod.stock < qty) return toast(`Stok i pamjaftueshëm! Ka vetëm ${prod.stock}`, true);
-
-  setLoading(document.getElementById('saleBtn'), true);
-  const { error: saleErr } = await supabaseClient.from('sales').insert({ worker_id, product_id, qty, price, date });
-  if (saleErr) { setLoading(document.getElementById('saleBtn'), false); return toast(saleErr.message, true); }
-
-  await supabaseClient.from('products').update({ stock: prod.stock - qty }).eq('id', product_id);
-  setLoading(document.getElementById('saleBtn'), false);
-
-  toast('Shitja u regjistrua');
-  document.getElementById('saleQty').value = 1;
-  selectedProductId = null;
-  refreshAll();
-}
-
-async function deleteSale(id) {
-  if (!confirm('Fshi shitjen?')) return;
-  const { data: s } = await supabaseClient.from('sales').select('*').eq('id', id).single();
-  if (!s) return;
-  if (!isAdmin() && s.worker_id !== currentWorker.id) return toast('Nuk ke leje', true);
-  const { data: prod } = await supabaseClient.from('products').select('stock').eq('id', s.product_id).single();
-  await supabaseClient.from('products').update({ stock: (prod?.stock || 0) + s.qty }).eq('id', s.product_id);
-  const { error } = await supabaseClient.from('sales').delete().eq('id', id);
-  if (error) return toast(error.message, true);
-  toast('U fshi');
-  refreshAll();
-}
-
-async function addStock() {
-  if (!isAdmin()) return toast('Vetëm admini mund të regjistrojë hyrje malli', true);
-  const product_id = parseInt(document.getElementById('stockProduct').value);
-  const qty = parseInt(document.getElementById('stockQty').value);
-  const price = parseFloat(document.getElementById('stockPrice').value);
-  const date = document.getElementById('stockDate').value;
-  
-  if (!product_id || !qty || qty <= 0) return toast('Plotëso sasinë', true);
-  if (isNaN(price) || price < 0) return toast('Vendos çmimin e shitjes', true);
-
-  // Merr worker_id = admin-i që po bën hyrjen
-  const worker_id = currentWorker.id;
-
-  const { error: entryErr } = await supabaseClient.from('stock_entries').insert({ 
-    worker_id, product_id, qty, cost: price, date 
-  });
-  if (entryErr) return toast(entryErr.message, true);
-
-  // Përditëso stokun + çmimin e shitjes
-  const { data: prod } = await supabaseClient.from('products').select('stock').eq('id', product_id).single();
-  await supabaseClient.from('products').update({ 
-    stock: (prod?.stock || 0) + qty,
-    price: price
-  }).eq('id', product_id);
-
-  toast('Hyrja u regjistrua');
-  document.getElementById('stockQty').value = 1;
-  document.getElementById('stockPrice').value = '';
-  refreshAll();
-}
-
-async function deleteStock(id) {
-  if (!isAdmin()) return;
-  if (!confirm('Fshi hyrjen?')) return;
-  const { data: s } = await supabaseClient.from('stock_entries').select('*').eq('id', id).single();
-  if (!s) return;
-  const { data: prod } = await supabaseClient.from('products').select('stock').eq('id', s.product_id).single();
-  await supabaseClient.from('products').update({ stock: Math.max(0, (prod?.stock || 0) - s.qty) }).eq('id', s.product_id);
-  const { error } = await supabaseClient.from('stock_entries').delete().eq('id', id);
-  if (error) return toast(error.message, true);
-  toast('U fshi');
-  refreshAll();
-}
-
-// ==================== REPORTS ====================
-async function loadDailyReport() {
-  if (!isAdmin()) return;
-  const date = document.getElementById('reportDate').value;
-  if (!date) return;
-  const workers = await fetchWorkers();
-  const { data: sales } = await supabaseClient.from('sales').select(`*, workers(name), products(name)`).eq('date', date);
-  const { data: entries } = await supabaseClient.from('stock_entries').select(`*, workers(name), products(name)`).eq('date', date);
-
-  let totalDay = 0, workerHtml = '';
-  workers.forEach(w => {
-    const ws = sales.filter(s => s.worker_id === w.id);
-    const amt = ws.reduce((a, s) => a + s.qty * s.price, 0);
-    const q = ws.reduce((a, s) => a + s.qty, 0);
-    totalDay += amt;
-    workerHtml += `<div class="stat worker">
-      <div class="stat-label">${escapeHtml(w.name)}</div>
-      <div class="stat-value">€${fmt(amt)}</div>
-      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${q} CD</div>
-    </div>`;
-  });
-  workerHtml += `<div class="stat total">
-    <div class="stat-label">Totali i ditës</div>
-    <div class="stat-value">€${fmt(totalDay)}</div>
-    <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${sales.reduce((a, s) => a + s.qty, 0)} CD</div>
-  </div>`;
-
-  let html = `<div class="card"><h2>📅 Raporti për ${date}</h2>
-    <div class="grid grid-3">${workerHtml}</div></div>`;
-
-  workers.forEach(w => {
-    const ws = sales.filter(s => s.worker_id === w.id);
-    const amt = ws.reduce((a, s) => a + s.qty * s.price, 0);
-    html += `<div class="card">
-      <h2>${escapeHtml(w.name)} — Total: €${fmt(amt)}</h2>
-      ${ws.length ? `<table><thead><tr><th>Produkti</th><th>Sasia</th><th>Çmimi</th><th>Totali</th></tr></thead><tbody>
-        ${ws.map(s => `<tr><td>${escapeHtml(s.products?.name || '?')}</td><td>${s.qty}</td><td>€${fmt(s.price)}</td><td><b>€${fmt(s.qty * s.price)}</b></td></tr>`).join('')}
-      </tbody></table>` : '<div class="empty">Nuk ka shitje</div>'}
-    </div>`;
-  });
-
-  if (entries.length) {
-    html += `<div class="card"><h2>📦 Hyrje malli (${date})</h2>
-      <table><thead><tr><th>Produkti</th><th>Sasia</th><th>Çmimi</th><th>Totali</th></tr></thead><tbody>
-        ${entries.map(s => `<tr><td>${escapeHtml(s.products?.name || '?')}</td><td>+${s.qty}</td><td>€${fmt(s.cost)}</td><td>€${fmt(s.qty * s.cost)}</td></tr>`).join('')}
-      </tbody></table></div>`;
-  }
-
-  document.getElementById('dailyReport').innerHTML = html;
-}
-
-async function loadRangeReport() {
-  if (!isAdmin()) return;
-  const from = document.getElementById('rangeFrom').value;
-  const to = document.getElementById('rangeTo').value;
-  if (!from || !to) return toast('Zgjidh të dyja datat', true);
-
-  const { data: sales } = await supabaseClient.from('sales')
-    .select(`*, workers(name), products(name)`).gte('date', from).lte('date', to).order('date');
-
-  const totalSales = sales.reduce((a, s) => a + s.qty * s.price, 0);
-  const totalQty = sales.reduce((a, s) => a + s.qty, 0);
-  const workers = await fetchWorkers();
-
-  let workerHtml = '';
-  workers.forEach(w => {
-    const ws = sales.filter(s => s.worker_id === w.id);
-    const amt = ws.reduce((a, s) => a + s.qty * s.price, 0);
-    const q = ws.reduce((a, s) => a + s.qty, 0);
-    workerHtml += `<div class="stat worker">
-      <div class="stat-label">${escapeHtml(w.name)}</div>
-      <div class="stat-value">€${fmt(amt)}</div>
-      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${q} CD</div>
-    </div>`;
-  });
-
-  document.getElementById('rangeReport').innerHTML = `
+// =====================================================
+// STOK
+// =====================================================
+async function renderStok() {
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = '<p>Duke u ngarkuar...</p>';
+  const { data } = await db.from('produktet').select('*').order('sasia');
+  mc.innerHTML = `
+    <h3 class="mb-3">📋 Menaxhimi i Stokut</h3>
     <div class="card">
-      <h2>Periudha ${from} → ${to}</h2>
-      <div class="grid grid-3">
-        ${workerHtml}
-        <div class="stat total">
-          <div class="stat-label">Totali periudhës</div>
-          <div class="stat-value">€${fmt(totalSales)}</div>
-          <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${totalQty} CD</div>
+      <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+          <thead class="table-light"><tr>
+            <th>Foto</th><th>Barkodi</th><th>Emri</th><th>Kategoria</th><th>Stoku</th><th>Përditëso</th>
+          </tr></thead>
+          <tbody>${(data||[]).map(p=>`
+            <tr>
+              <td>${p.foto_url?`<img src="${p.foto_url}" class="thumb">`:'—'}</td>
+              <td><code>${p.barkodi}</code></td>
+              <td>${p.emri}</td>
+              <td>${p.kategoria||'-'}</td>
+              <td><span class="badge ${p.sasia<5?'bg-danger':'bg-success'}">${p.sasia}</span></td>
+              <td>
+                <div class="input-group input-group-sm" style="max-width:180px">
+                  <input id="stok_${p.id}" type="number" class="form-control" value="${p.sasia}">
+                  <button class="btn btn-primary" onclick="ruajStok(${p.id})">💾</button>
+                </div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+async function ruajStok(id) {
+  const val = parseInt(document.getElementById('stok_' + id).value);
+  const { error } = await db.from('produktet').update({ sasia: val }).eq('id', id);
+  if (error) return alert(error.message);
+  renderStok();
+}
+
+// =====================================================
+// RAPORTE
+// =====================================================
+async function renderRaporte() {
+  const mc = document.getElementById('mainContent');
+  const sot = new Date().toISOString().slice(0,10);
+  mc.innerHTML = `
+    <h3 class="mb-3">📈 Raporte</h3>
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3"><label class="form-label">Nga</label>
+          <input id="r_nga" type="date" class="form-control" value="${sot}"></div>
+        <div class="col-md-3"><label class="form-label">Deri</label>
+          <input id="r_deri" type="date" class="form-control" value="${sot}"></div>
+        <div class="col-md-3"><label class="form-label">Punëtori</label>
+          <select id="r_punetor" class="form-select"><option value="">Të gjithë</option></select></div>
+        <div class="col-md-3">
+          <button class="btn btn-primary w-100" onclick="ngarkoRaportet()">🔍 Filtro</button>
         </div>
       </div>
     </div>
-    <div class="card">
-      <h2>Detaje</h2>
-      ${sales.length ? `<table><thead><tr><th>Data</th><th>Punëtori</th><th>Produkti</th><th>Sasia</th><th>Totali</th></tr></thead><tbody>
-        ${sales.map(s => `<tr><td>${s.date}</td><td>${escapeHtml(s.workers?.name || '?')}</td><td>${escapeHtml(s.products?.name || '?')}</td><td>${s.qty}</td><td>€${fmt(s.qty * s.price)}</td></tr>`).join('')}
-      </tbody></table>` : '<div class="empty">Nuk ka shitje</div>'}
+    <div id="raportBody"></div>`;
+
+  const { data: pun } = await db.from('profiles').select('*').eq('roli','punetor');
+  const sel = document.getElementById('r_punetor');
+  (pun||[]).forEach(p => sel.innerHTML += `<option value="${p.id}">${p.emri}</option>`);
+  ngarkoRaportet();
+}
+
+async function ngarkoRaportet() {
+  const nga = document.getElementById('r_nga').value;
+  const deri = document.getElementById('r_deri').value;
+  const pid = document.getElementById('r_punetor').value;
+  const rb = document.getElementById('raportBody');
+  rb.innerHTML = '<p>Duke u ngarkuar...</p>';
+
+  let q = db.from('shitjet').select('*')
+    .gte('krijuar_me', nga + 'T00:00:00')
+    .lte('krijuar_me', deri + 'T23:59:59')
+    .order('krijuar_me', { ascending:false });
+  if (pid) q = q.eq('punetor_id', pid);
+  const { data: shitjet } = await q;
+
+  // Totalet për punëtor
+  const totalet = {};
+  (shitjet||[]).forEach(s => {
+    totalet[s.punetor_emri] = totalet[s.punetor_emri] || { nr:0, total:0 };
+    totalet[s.punetor_emri].nr++;
+    totalet[s.punetor_emri].total += Number(s.totali);
+  });
+
+  // Ditor
+  const ditore = {};
+  (shitjet||[]).forEach(s => {
+    const d = s.krijuar_me.slice(0,10);
+    ditore[d] = ditore[d] || { nr:0, total:0 };
+    ditore[d].nr++;
+    ditore[d].total += Number(s.totali);
+  });
+
+  // Mujor
+  const { data: mujore } = await db.from('raport_mujor').select('*').limit(12);
+  const totali = (shitjet||[]).reduce((s,x)=>s+Number(x.totali), 0);
+
+  rb.innerHTML = `
+    <div class="card p-3 mb-3">
+      <h5>💰 Totali për periudhën: <span class="text-success">${totali.toFixed(2)} €</span> (${shitjet?.length||0} shitje)</h5>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="card p-3">
+          <h5>👤 Raport sipas punëtorit</h5>
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Punëtori</th><th>Shitje</th><th>Totali (€)</th></tr></thead>
+            <tbody>${Object.entries(totalet).map(([k,v])=>`
+              <tr><td>${k}</td><td>${v.nr}</td><td><b>${v.total.toFixed(2)}</b></td></tr>`).join('') ||
+              '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-3">
+          <h5>📅 Raport ditor</h5>
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Dita</th><th>Shitje</th><th>Totali (€)</th></tr></thead>
+            <tbody>${Object.entries(ditore).sort().reverse().map(([k,v])=>`
+              <tr><td>${k}</td><td>${v.nr}</td><td><b>${v.total.toFixed(2)}</b></td></tr>`).join('') ||
+              '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-3 mb-3">
+      <h5>📆 Raport mujor (12 muajt e fundit)</h5>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Muaji</th><th>Shitje</th><th>Totali (€)</th></tr></thead>
+        <tbody>${(mujore||[]).map(m=>`
+          <tr><td>${m.muaji}</td><td>${m.nr_shitjesh}</td><td><b>${Number(m.totali).toFixed(2)}</b></td></tr>`).join('') ||
+          '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card p-3">
+      <h5>🧾 Detajet e shitjeve</h5>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Data</th><th>Produkti</th><th>Punëtori</th><th>Sasia</th><th>Totali</th></tr></thead>
+          <tbody>${(shitjet||[]).map(s=>`
+            <tr><td>${new Date(s.krijuar_me).toLocaleString('sq-AL')}</td>
+                <td>${s.emri_produktit}</td><td>${s.punetor_emri}</td>
+                <td>${s.sasia}</td><td><b>${Number(s.totali).toFixed(2)} €</b></td></tr>`).join('') ||
+                '<tr><td colspan="5" class="text-muted">Nuk ka shitje</td></tr>'}
+          </tbody>
+        </table>
+      </div>
     </div>`;
 }
 
-// ==================== REALTIME ====================
-let realtimeChannel = null;
-function setupRealtime() {
-  if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
-  realtimeChannel = supabaseClient
-    .channel('cdshop-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => refreshAll())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_entries' }, () => refreshAll())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => refreshAll())
-    .subscribe();
+// =====================================================
+// PËRDORUESIT
+// =====================================================
+async function renderPerdoruesit() {
+  const mc = document.getElementById('mainContent');
+  const { data } = await db.from('profiles').select('*');
+  mc.innerHTML = `
+    <h3 class="mb-3">👥 Përdoruesit</h3>
+    <div class="card mb-3 p-3">
+      <h6>➕ Shto punëtor të re</h6>
+      <div class="alert alert-info small">
+        Për të shtuar punëtor: shko në <b>Supabase → Authentication → Users → Add User</b>
+        dhe vendos në <b>Raw User Metadata</b>: <code>{"emri":"emri_i_punetorit","roli":"punetor"}</code>
+      </div>
+      <table class="table mb-0">
+        <thead><tr><th>Emri</th><th>Roli</th><th>Aktiv</th><th>Veprime</th></tr></thead>
+        <tbody>${(data||[]).map(u=>`
+          <tr>
+            <td><b>${u.emri}</b></td>
+            <td><span class="badge ${u.roli==='admin'?'bg-danger':'bg-primary'}">${u.roli}</span></td>
+            <td>${u.aktiv?'✅':'❌'}</td>
+            <td>
+              <button class="btn btn-sm btn-warning" onclick="ndryshoRolin('${u.id}','${u.roli==='admin'?'punetor':'admin'}')">
+                Bëj ${u.roli==='admin'?'Punëtor':'Admin'}
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="fshiPerdorues('${u.id}')">Fshij</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
-// ==================== INIT ====================
-async function init() {
-  document.querySelectorAll('.tab').forEach(t => {
-    t.onclick = () => {
-      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      document.getElementById('panel-' + t.dataset.tab).classList.add('active');
-      refreshAll();
-    };
-  });
-
-  // Search produkter
-  document.getElementById('saleSearch')?.addEventListener('input', renderProductGrid);
-
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    await loadWorkerAndShowApp();
-  }
-
-  supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-    if (session && !currentWorker) {
-      currentUser = session.user;
-      await loadWorkerAndShowApp();
-    } else if (!session) {
-      currentUser = null; currentWorker = null;
-      document.getElementById('app').classList.add('hidden');
-      document.getElementById('loginScreen').classList.remove('hidden');
-    }
-  });
-
-  document.getElementById('loginPassword').addEventListener('keypress', e => {
-    if (e.key === 'Enter') doLogin();
-  });
+async function ndryshoRolin(id, roli) {
+  const { error } = await db.from('profiles').update({ roli }).eq('id', id);
+  if (error) return alert(error.message);
+  renderPerdoruesit();
 }
 
-init();
+async function fshiPerdorues(id) {
+  if (!confirm('Fshij përdoruesin? (vetëm nga profiles; userin nga Supabase Auth duhet ta fshish manualisht)')) return;
+  const { error } = await db.from('profiles').delete().eq('id', id);
+  if (error) return alert(error.message);
+  renderPerdoruesit();
+}
+
+// =====================================================
+// INICIALIZIMI
+// =====================================================
+db.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') showLogin();
+});
+window.addEventListener('load', async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) await loadUser();
+});
 </script>
 </body>
 </html>
