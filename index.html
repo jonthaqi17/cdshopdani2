@@ -71,7 +71,11 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; }
 </div>
 
 <!-- MODAL -->
-<div class="modal fade" id="modal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content" id="modalContent"></div></div></div>
+<div class="modal fade" id="modal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" id="modalContent"></div>
+  </div>
+</div>
 
 <script>
 // =====================================================
@@ -83,9 +87,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let USER = null;       // { id, email, emri, roli }
+let USER = null;
 let SHporta = [];
 let scanner = null;
+let scannerActive = false;
 let currentPage = 'shitje';
 
 // =====================================================
@@ -95,7 +100,7 @@ async function login() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
   document.getElementById('loginMsg').textContent = '';
-  const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+  const { error } = await db.auth.signInWithPassword({ email, password: pass });
   if (error) {
     document.getElementById('loginMsg').textContent = '❌ ' + error.message;
     return;
@@ -106,18 +111,33 @@ async function login() {
 async function loadUser() {
   const { data: { user } } = await db.auth.getUser();
   if (!user) return showLogin();
-  const { data: prof } = await db.from('profiles').select('*').eq('id', user.id).single();
-  USER = { id: user.id, email: user.email, emri: prof?.emri || user.email, roli: prof?.roli || 'punetor' };
+  
+  const { data: prof, error } = await db.from('profiles').select('*').eq('id', user.id).single();
+  
+  if (error || !prof) {
+    alert('Nuk u gjet profili për këtë përdorues. Kontakto adminin!');
+    await db.auth.signOut();
+    return showLogin();
+  }
+  
+  USER = { 
+    id: user.id, 
+    email: user.email, 
+    emri: prof.emri || user.email, 
+    roli: prof.roli || 'punetor' 
+  };
+  
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('appView').classList.remove('hidden');
   document.getElementById('userInfo').textContent = `${USER.emri} (${USER.roli})`;
   buildNav();
-  navigate('shitje');
+  navigate(USER.roli === 'admin' ? 'dashboard' : 'shitje');
 }
 
 async function logout() {
   await db.auth.signOut();
   USER = null;
+  SHporta = [];
   showLogin();
 }
 
@@ -131,18 +151,18 @@ function showLogin() {
 // =====================================================
 function buildNav() {
   const adminLinks = `
-    <a href="#" onclick="navigate('dashboard')" id="nav-dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a href="#" onclick="navigate('produktet')" id="nav-produktet"><i class="bi bi-box-seam"></i> Produktet</a>
-    <a href="#" onclick="navigate('stok')" id="nav-stok"><i class="bi bi-clipboard-data"></i> Stoku</a>
-    <a href="#" onclick="navigate('raporte')" id="nav-raporte"><i class="bi bi-bar-chart"></i> Raporte</a>
-    <a href="#" onclick="navigate('perdoruesit')" id="nav-perdoruesit"><i class="bi bi-people"></i> Përdoruesit</a>
+    <a href="#" onclick="navigate('dashboard');return false" id="nav-dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="#" onclick="navigate('produktet');return false" id="nav-produktet"><i class="bi bi-box-seam"></i> Produktet</a>
+    <a href="#" onclick="navigate('stok');return false" id="nav-stok"><i class="bi bi-clipboard-data"></i> Stoku</a>
+    <a href="#" onclick="navigate('raporte');return false" id="nav-raporte"><i class="bi bi-bar-chart"></i> Raporte</a>
+    <a href="#" onclick="navigate('perdoruesit');return false" id="nav-perdoruesit"><i class="bi bi-people"></i> Përdoruesit</a>
   `;
   const workerLinks = `
-    <a href="#" onclick="navigate('shitje')" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>
+    <a href="#" onclick="navigate('shitje');return false" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>
   `;
   document.getElementById('navMenu').innerHTML =
     (USER.roli === 'admin' ? adminLinks : workerLinks) +
-    `<a href="#" onclick="logout()" class="text-danger"><i class="bi bi-box-arrow-right"></i> Dil</a>`;
+    `<a href="#" onclick="logout();return false" class="text-danger"><i class="bi bi-box-arrow-right"></i> Dil</a>`;
 }
 
 function navigate(page) {
@@ -150,6 +170,7 @@ function navigate(page) {
   document.querySelectorAll('#navMenu a').forEach(a => a.classList.remove('active'));
   const el = document.getElementById('nav-' + page);
   if (el) el.classList.add('active');
+  
   if (page === 'shitje') renderShitje();
   if (page === 'dashboard' && USER.roli === 'admin') renderDashboard();
   if (page === 'produktet' && USER.roli === 'admin') renderProduktet();
@@ -165,10 +186,11 @@ async function renderDashboard() {
   const mc = document.getElementById('mainContent');
   mc.innerHTML = '<p>Duke u ngarkuar...</p>';
   const sot = new Date().toISOString().slice(0,10);
+  
   const { count: cProd } = await db.from('produktet').select('*', { count:'exact', head:true });
   const { data: stokData } = await db.from('produktet').select('sasia');
-  const totalStok = (stokData||[]).reduce((s,p)=>s+p.sasia, 0);
-  const { data: shitjetSot } = await db.from('shitjet').select('totali').gte('krijuar_me', sot);
+  const totalStok = (stokData||[]).reduce((s,p)=>s+Number(p.sasia), 0);
+  const { data: shitjetSot } = await db.from('shitjet').select('totali').gte('krijuar_me', sot + 'T00:00:00');
   const totalSot = (shitjetSot||[]).reduce((s,x)=>s+Number(x.totali), 0);
   const { data: stokPak } = await db.from('produktet').select('*').lt('sasia',5).order('sasia').limit(10);
 
@@ -208,12 +230,16 @@ async function renderProduktet() {
 }
 
 async function loadProduktet() {
+  const grid = document.getElementById('prodGrid');
+  if (!grid) return;
   const q = document.getElementById('searchProd')?.value.trim() || '';
   let query = db.from('produktet').select('*').order('emri');
   if (q) query = query.or(`emri.ilike.%${q}%,barkodi.ilike.%${q}%,kategoria.ilike.%${q}%`);
-  const { data } = await query;
-  const grid = document.getElementById('prodGrid');
+  const { data, error } = await query;
+  
+  if (error) { grid.innerHTML = `<div class="alert alert-danger">${error.message}</div>`; return; }
   if (!data || !data.length) { grid.innerHTML = '<p class="text-muted">Nuk ka produkte.</p>'; return; }
+  
   grid.innerHTML = data.map(p => `
     <div class="col-md-4 col-lg-3">
       <div class="card prod-card p-2">
@@ -261,9 +287,13 @@ function formProdukt(p = null) {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" data-bs-dismiss="modal">Anulo</button>
-      <button class="btn btn-success" onclick="ruajProdukt(${p?.id||'null'})">💾 Ruaj</button>
+      <button class="btn btn-success" id="btnRuajProdukt">💾 Ruaj</button>
     </div>`;
-  new bootstrap.Modal('#modal').show();
+
+  const modalEl = document.getElementById('modal');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+  document.getElementById('btnRuajProdukt').onclick = () => ruajProdukt(p?.id || null);
 }
 
 async function ruajProdukt(id) {
@@ -273,31 +303,54 @@ async function ruajProdukt(id) {
   const cmimi_blerjes = parseFloat(document.getElementById('f_blerjes').value||0);
   const cmimi_shitjes = parseFloat(document.getElementById('f_shitjes').value);
   const sasia = parseInt(document.getElementById('f_sasia').value||0);
-  if (!barkodi || !emri || isNaN(cmimi_shitjes)) return alert('Plotëso fushat e detyrueshme!');
 
-  let foto_url = null;
-  const fileInput = document.getElementById('f_foto');
-  if (fileInput.files[0]) {
-    const file = fileInput.files[0];
-    const fn = `${barkodi}_${Date.now()}.${file.name.split('.').pop()}`;
-    const { error: upErr } = await db.storage.from('produktet').upload(fn, file);
-    if (upErr) return alert('Gabim foto: ' + upErr.message);
-    const { data: urlData } = db.storage.from('produktet').getPublicUrl(fn);
-    foto_url = urlData.publicUrl;
+  if (!barkodi || !emri || isNaN(cmimi_shitjes)) {
+    return alert('Plotëso fushat e detyrueshme!');
   }
 
-  const payload = { barkodi, emri, kategoria, cmimi_blerjes, cmimi_shitjes, sasia };
-  if (foto_url) payload.foto_url = foto_url;
+  const btn = document.getElementById('btnRuajProdukt');
+  btn.disabled = true;
+  btn.textContent = '⏳ Duke ruajtur...';
 
-  let err;
-  if (id) {
-    ({ error: err } = await db.from('produktet').update(payload).eq('id', id));
-  } else {
-    ({ error: err } = await db.from('produktet').insert(payload));
+  try {
+    let foto_url = null;
+    const fileInput = document.getElementById('f_foto');
+    if (fileInput.files[0]) {
+      const file = fileInput.files[0];
+      const ext = file.name.split('.').pop();
+      const fn = `${barkodi}_${Date.now()}.${ext}`;
+      const { error: upErr } = await db.storage.from('produktet').upload(fn, file);
+      if (upErr) {
+        console.error('Upload error:', upErr);
+        throw new Error('Gabim foto: ' + upErr.message);
+      }
+      const { data: urlData } = db.storage.from('produktet').getPublicUrl(fn);
+      foto_url = urlData.publicUrl;
+    }
+
+    const payload = { barkodi, emri, kategoria, cmimi_blerjes, cmimi_shitjes, sasia };
+    if (foto_url) payload.foto_url = foto_url;
+
+    let err;
+    if (id) {
+      ({ error: err } = await db.from('produktet').update(payload).eq('id', id));
+    } else {
+      ({ error: err } = await db.from('produktet').insert(payload));
+    }
+
+    if (err) {
+      console.error('Insert/Update error:', err);
+      throw new Error(err.message);
+    }
+
+    bootstrap.Modal.getInstance(document.getElementById('modal')).hide();
+    loadProduktet();
+    alert('✅ Produkti u ruajt me sukses!');
+  } catch (e) {
+    alert('Gabim: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '💾 Ruaj';
   }
-  if (err) return alert('Gabim: ' + err.message);
-  bootstrap.Modal.getInstance(document.getElementById('modal')).hide();
-  loadProduktet();
 }
 
 async function fshiProdukt(id) {
@@ -308,7 +361,7 @@ async function fshiProdukt(id) {
 }
 
 // =====================================================
-// SHITJE (me skanim barkodi)
+// SHITJE
 // =====================================================
 function renderShitje() {
   SHporta = [];
@@ -422,13 +475,12 @@ async function perfundoSshitjen() {
   if (!confirm('Konfirmo shitjen?')) return;
 
   for (const it of SHporta) {
-    // Zvogëlo stokun
     const { data: prod } = await db.from('produktet').select('sasia').eq('id', it.id).single();
     if (!prod || prod.sasia < it.sasia) return alert(`Stok i pamjaftueshëm për ${it.emri}`);
+    
     const { error: e1 } = await db.from('produktet').update({ sasia: prod.sasia - it.sasia }).eq('id', it.id);
     if (e1) return alert(e1.message);
 
-    // Regjistro shitjen
     const { error: e2 } = await db.from('shitjet').insert({
       produkt_id: it.id,
       emri_produktit: it.emri,
@@ -444,13 +496,15 @@ async function perfundoSshitjen() {
   renderShitje();
 }
 
+// =====================================================
 // SKANERI I KAMERËS
-let scannerActive = false;
+// =====================================================
 async function toggleScanner() {
   const div = document.getElementById('reader');
   const txt = document.getElementById('scannerBtnTxt');
   if (scannerActive) {
-    await scanner.stop(); scanner.clear(); scannerActive = false;
+    try { await scanner.stop(); scanner.clear(); } catch(e){}
+    scannerActive = false;
     div.classList.add('hidden'); txt.textContent = 'Skano me kamerë'; scanner = null;
     return;
   }
@@ -464,7 +518,6 @@ async function toggleScanner() {
       (text) => {
         document.getElementById('barkodiInput').value = text;
         kerkoBarkod();
-        // dridhje për feedback
         if (navigator.vibrate) navigator.vibrate(80);
       }, () => {}
     );
@@ -513,6 +566,7 @@ async function ruajStok(id) {
   const val = parseInt(document.getElementById('stok_' + id).value);
   const { error } = await db.from('produktet').update({ sasia: val }).eq('id', id);
   if (error) return alert(error.message);
+  alert('✅ Stoku u përditësua!');
   renderStok();
 }
 
@@ -559,7 +613,6 @@ async function ngarkoRaportet() {
   if (pid) q = q.eq('punetor_id', pid);
   const { data: shitjet } = await q;
 
-  // Totalet për punëtor
   const totalet = {};
   (shitjet||[]).forEach(s => {
     totalet[s.punetor_emri] = totalet[s.punetor_emri] || { nr:0, total:0 };
@@ -567,7 +620,6 @@ async function ngarkoRaportet() {
     totalet[s.punetor_emri].total += Number(s.totali);
   });
 
-  // Ditor
   const ditore = {};
   (shitjet||[]).forEach(s => {
     const d = s.krijuar_me.slice(0,10);
@@ -576,7 +628,6 @@ async function ngarkoRaportet() {
     ditore[d].total += Number(s.totali);
   });
 
-  // Mujor
   const { data: mujore } = await db.from('raport_mujor').select('*').limit(12);
   const totali = (shitjet||[]).reduce((s,x)=>s+Number(x.totali), 0);
 
@@ -651,7 +702,7 @@ async function renderPerdoruesit() {
       <h6>➕ Shto punëtor të re</h6>
       <div class="alert alert-info small">
         Për të shtuar punëtor: shko në <b>Supabase → Authentication → Users → Add User</b>
-        dhe vendos në <b>Raw User Metadata</b>: <code>{"emri":"emri_i_punetorit","roli":"punetor"}</code>
+        dhe vendos në <b>User Metadata</b>: <code>{"emri":"emri_i_punetorit","roli":"punetor"}</code>
       </div>
       <table class="table mb-0">
         <thead><tr><th>Emri</th><th>Roli</th><th>Aktiv</th><th>Veprime</th></tr></thead>
@@ -679,7 +730,7 @@ async function ndryshoRolin(id, roli) {
 }
 
 async function fshiPerdorues(id) {
-  if (!confirm('Fshij përdoruesin? (vetëm nga profiles; userin nga Supabase Auth duhet ta fshish manualisht)')) return;
+  if (!confirm('Fshij përdoruesin nga profiles?')) return;
   const { error } = await db.from('profiles').delete().eq('id', id);
   if (error) return alert(error.message);
   renderPerdoruesit();
@@ -688,9 +739,10 @@ async function fshiPerdorues(id) {
 // =====================================================
 // INICIALIZIMI
 // =====================================================
-db.auth.onAuthStateChange((event, session) => {
+db.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT') showLogin();
 });
+
 window.addEventListener('load', async () => {
   const { data: { session } } = await db.auth.getSession();
   if (session) await loadUser();
