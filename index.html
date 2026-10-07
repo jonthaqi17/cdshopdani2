@@ -35,10 +35,10 @@
   .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px; margin-bottom: 12px; }
   label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
-  input, select {
+  input, select, textarea {
     width: 100%; padding: 10px 12px; background: #0f172a;
     border: 1px solid #334155; border-radius: 8px; color: #e2e8f0;
-    font-size: 14px; outline: none;
+    font-size: 14px; outline: none; font-family: inherit;
   }
   input:focus, select:focus { border-color: #3b82f6; }
   button { padding: 10px 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6);
@@ -51,7 +51,7 @@
   .btn-secondary { background: #334155; }
   .btn-sm { padding: 6px 12px; font-size: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #334155; vertical-align: middle; }
   th { color: #94a3b8; font-weight: 600; font-size: 12px;
     text-transform: uppercase; letter-spacing: 0.5px; }
   tr:hover td { background: #0f172a; }
@@ -69,6 +69,7 @@
   .badge-in { background: #064e3b; color: #6ee7b7; }
   .badge-admin { background: #7c3aed; color: #ddd6fe; }
   .badge-worker { background: #0369a1; color: #bae6fd; }
+  .badge-cat { background: #1e40af; color: #bfdbfe; padding: 3px 8px; }
   #toast { position: fixed; bottom: 20px; right: 20px; background: #10b981;
     color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px;
     font-weight: 600; opacity: 0; transform: translateY(20px);
@@ -79,12 +80,67 @@
   #loginScreen .card { padding: 32px; }
   .hidden { display: none !important; }
   .user-info { display: flex; align-items: center; gap: 12px; }
-  .user-avatar {
-    width: 40px; height: 40px; border-radius: 50%;
+  .user-avatar { width: 40px; height: 40px; border-radius: 50%;
     background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 16px;
+    font-weight: 700; font-size: 16px; }
+  
+  /* Product images */
+  .prod-thumb {
+    width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
+    background: #0f172a; border: 1px solid #334155;
   }
+  .prod-thumb-empty {
+    width: 48px; height: 48px; border-radius: 8px;
+    background: #0f172a; border: 1px dashed #334155;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #475569;
+  }
+  .image-upload-area {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    background: #0f172a; border: 1px dashed #334155; border-radius: 8px;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .image-upload-area:hover { border-color: #3b82f6; }
+  .image-preview {
+    width: 80px; height: 80px; border-radius: 8px; object-fit: cover;
+    background: #1e293b; border: 1px solid #334155;
+  }
+  .image-preview-empty {
+    width: 80px; height: 80px; border-radius: 8px;
+    background: #1e293b; border: 1px dashed #334155;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #475569;
+  }
+  
+  /* Product cards for sales */
+  .product-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px; margin-top: 12px;
+  }
+  .product-card {
+    background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+    padding: 10px; cursor: pointer; transition: all 0.2s;
+    text-align: center;
+  }
+  .product-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
+  .product-card.selected { border-color: #3b82f6; background: #1e3a5f; }
+  .product-card img {
+    width: 100%; height: 120px; object-fit: cover; border-radius: 6px;
+    background: #1e293b;
+  }
+  .product-card .no-img {
+    width: 100%; height: 120px; border-radius: 6px;
+    background: #1e293b; display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: #475569;
+  }
+  .product-card .p-name {
+    font-size: 13px; font-weight: 600; margin-top: 8px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .product-card .p-price { font-size: 12px; color: #10b981; font-weight: 600; margin-top: 2px; }
+  .product-card .p-stock { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  
   @media (max-width: 640px) {
     body { padding: 12px; }
     h1 { font-size: 22px; }
@@ -94,7 +150,6 @@
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
 <div id="loginScreen">
   <div class="card">
     <h1 style="text-align:center; margin-bottom: 24px;">📀 CD Shop</h1>
@@ -111,7 +166,6 @@
   </div>
 </div>
 
-<!-- MAIN APP -->
 <div id="app" class="container hidden">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 20px;">
     <div>
@@ -158,10 +212,16 @@
           <label>Punëtori</label>
           <select id="saleWorker"></select>
         </div>
-        <div><label>Produkti</label><select id="saleProduct"></select></div>
+        <div><label>Data</label><input type="date" id="saleDate"></div>
+      </div>
+
+      <label style="margin-top: 8px;">Zgjidh produktin</label>
+      <input type="text" id="saleSearch" placeholder="🔍 Kërko produkt..." style="margin-bottom:12px;">
+      <div class="product-grid" id="saleProductGrid"></div>
+
+      <div class="form-row" style="margin-top: 16px;">
         <div><label>Sasia</label><input type="number" id="saleQty" value="1" min="1"></div>
         <div><label>Çmimi (€)</label><input type="number" id="salePrice" step="0.01" min="0"></div>
-        <div><label>Data</label><input type="date" id="saleDate"></div>
       </div>
       <button onclick="addSale()" id="saleBtn">Regjistro shitjen</button>
     </div>
@@ -171,18 +231,27 @@
     </div>
   </div>
 
-  <!-- STOCK (admin only) -->
+  <!-- STOCK -->
   <div class="panel" id="panel-stock">
     <div class="card">
       <h2>➕ Hyrje mall i re</h2>
       <div class="form-row">
-        <div><label>Punëtori që pranoi</label><select id="stockWorker"></select></div>
-        <div><label>Produkti</label><select id="stockProduct"></select></div>
+        <div>
+          <label>Kategoria</label>
+          <select id="stockCategoryFilter" onchange="filterStockProducts()"></select>
+        </div>
+        <div>
+          <label>Produkti</label>
+          <select id="stockProduct"></select>
+        </div>
         <div><label>Sasia</label><input type="number" id="stockQty" value="1" min="1"></div>
-        <div><label>Çmimi blerje (€)</label><input type="number" id="stockCost" step="0.01" min="0"></div>
+        <div><label>Çmimi shitje (€)</label><input type="number" id="stockPrice" step="0.01" min="0" placeholder="Çmimi i shitjes"></div>
         <div><label>Data</label><input type="date" id="stockDate"></div>
       </div>
       <button onclick="addStock()">Regjistro hyrjen</button>
+      <p style="font-size:12px; color:#94a3b8; margin-top:10px;">
+        ℹ️ Çmimi që vendos këtu do të përditësojë çmimin e shitjes së produktit.
+      </p>
     </div>
     <div class="card">
       <h2>Hyrjet e mallit</h2>
@@ -190,24 +259,41 @@
     </div>
   </div>
 
-  <!-- PRODUCTS (admin only) -->
+  <!-- PRODUCTS -->
   <div class="panel" id="panel-products">
     <div class="card">
       <h2>➕ Shto produkt</h2>
       <div class="form-row">
-        <div><label>Emri i CD-së</label><input type="text" id="prodName" placeholder="Album - Artist"></div>
-        <div><label>Kategoria</label><input type="text" id="prodCategory" placeholder="Rock, Pop..."></div>
+        <div><label>Emri i produktit</label><input type="text" id="prodName" placeholder="p.sh. USB 32GB Sandisk"></div>
+        <div>
+          <label>Kategoria</label>
+          <select id="prodCategory"></select>
+        </div>
         <div><label>Çmimi shitje (€)</label><input type="number" id="prodPrice" step="0.01" min="0"></div>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label>Foto e produktit</label>
+        <div class="image-upload-area" onclick="document.getElementById('prodImage').click()">
+          <div id="prodImagePreview" class="image-preview-empty">📷</div>
+          <div>
+            <div style="font-size:14px; font-weight:600;">Kliko për të ngarkuar foto</div>
+            <div style="font-size:12px; color:#94a3b8;">JPG, PNG ose WEBP (max 5MB)</div>
+          </div>
+        </div>
+        <input type="file" id="prodImage" accept="image/*" style="display:none" onchange="previewProductImage(event)">
       </div>
       <button onclick="addProduct()">Shto produktin</button>
     </div>
     <div class="card">
-      <h2>Lista e produkteve & stoku</h2>
+      <h2>Lista e produkteve</h2>
+      <div style="margin-bottom:12px;">
+        <input type="text" id="prodSearch" placeholder="🔍 Kërko produkt..." oninput="renderProducts()">
+      </div>
       <div id="productsList"></div>
     </div>
   </div>
 
-  <!-- WORKERS (admin only) -->
+  <!-- WORKERS -->
   <div class="panel" id="panel-workers">
     <div class="card">
       <h2>➕ Shto punëtor</h2>
@@ -224,7 +310,7 @@
       </div>
       <button onclick="addWorker()">Shto punëtorin</button>
       <p style="font-size:12px; color:#94a3b8; margin-top:10px;">
-        ⚠️ Pas shtimit, duhet të krijosh user në Supabase Auth me të njëjtin email dhe fjalëkalim.
+        ⚠️ Pas shtimit, krijo user në Supabase Auth me të njëjtin email + fjalëkalim.
       </p>
     </div>
     <div class="card">
@@ -233,7 +319,7 @@
     </div>
   </div>
 
-  <!-- REPORTS (admin only) -->
+  <!-- REPORTS -->
   <div class="panel" id="panel-reports">
     <div class="card">
       <h2>📈 Raporti Ditor</h2>
@@ -263,8 +349,21 @@ const SUPABASE_URL = 'https://rhkaqtpfhcyajyslnvln.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa2FxdHBmaGN5YWp5c2xudmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3Mzc1OTQsImV4cCI6MjA5MDMxMzU5NH0.oaObjuascv482VGXD7p-loOZY048mt1LbwJlWcZyCSE';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let currentUser = null;   // Supabase auth user
-let currentWorker = null; // worker record from DB
+let currentUser = null;
+let currentWorker = null;
+let selectedProductId = null;
+
+// KATEGORITË FIKSE
+const CATEGORIES = [
+  'USB',
+  'CD',
+  'SD Card',
+  'Adapter',
+  'Kablla',
+  'Zmadhues Zëri',
+  'Qanta',
+  'Aksesorë të Tjera'
+];
 
 // ==================== HELPERS ====================
 function toast(msg, isError = false) {
@@ -288,6 +387,17 @@ function setLoading(btn, loading) {
 }
 function isAdmin() { return currentWorker?.role === 'admin'; }
 
+function populateCategories() {
+  const opts = '<option value="">-- Zgjidh kategorinë --</option>' +
+    CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  const optsAll = '<option value="">Të gjitha kategoritë</option>' +
+    CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  const pc = document.getElementById('prodCategory');
+  if (pc) pc.innerHTML = opts;
+  const sc = document.getElementById('stockCategoryFilter');
+  if (sc) sc.innerHTML = optsAll;
+}
+
 // ==================== AUTH ====================
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
@@ -307,13 +417,9 @@ async function doLogin() {
 }
 
 async function loadWorkerAndShowApp() {
-  // Gjej punëtorin që i përket këtij useri me email
   const email = currentUser.email.toLowerCase();
   const { data, error } = await supabaseClient
-    .from('workers')
-    .select('*')
-    .eq('email', email)
-    .maybeSingle();
+    .from('workers').select('*').eq('email', email).maybeSingle();
 
   if (error) {
     document.getElementById('loginError').textContent = 'Gabim: ' + error.message;
@@ -327,7 +433,6 @@ async function loadWorkerAndShowApp() {
     setLoading(document.getElementById('loginBtn'), false);
     return;
   }
-
   currentWorker = data;
   setLoading(document.getElementById('loginBtn'), false);
   showApp();
@@ -345,7 +450,6 @@ function showApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
 
-  // Info useri
   const initial = (currentWorker.name || '?').charAt(0).toUpperCase();
   document.getElementById('userAvatar').textContent = initial;
   document.getElementById('userNameDisplay').textContent = currentWorker.name;
@@ -353,20 +457,19 @@ function showApp() {
     ? '<span class="badge badge-admin">ADMIN</span>'
     : '<span class="badge badge-worker">PUNËTOR</span>';
   document.getElementById('roleSubtitle').textContent = isAdmin()
-    ? 'Akses i plotë — shitje, stok, produkte, raporte'
+    ? 'Akses i plotë'
     : 'Akses i kufizuar — vetëm shitjet e tua';
 
-  // Fshih tab-at admin-only për punëtorët
   document.querySelectorAll('[data-admin-only]').forEach(el => {
     el.classList.toggle('hidden', !isAdmin());
   });
 
-  // Për punëtorin, vendos vetëm veten në dropdown
   if (!isAdmin()) {
     document.getElementById('saleWorkerWrap').classList.add('hidden');
     document.getElementById('salesFilter').textContent = '— vetëm të tuat';
   }
 
+  populateCategories();
   document.getElementById('todayDate').textContent = today();
   document.getElementById('saleDate').value = today();
   document.getElementById('stockDate').value = today();
@@ -378,45 +481,37 @@ function showApp() {
 
 // ==================== DATA ====================
 async function fetchWorkers() {
-  const { data, error } = await supabaseClient.from('workers').select('*').order('id');
-  if (error) { console.error(error); return []; }
+  const { data } = await supabaseClient.from('workers').select('*').order('id');
   return data || [];
 }
 async function fetchProducts() {
-  const { data, error } = await supabaseClient.from('products').select('*').order('name');
-  if (error) { console.error(error); return []; }
+  const { data } = await supabaseClient.from('products').select('*').order('name');
   return data || [];
 }
 async function fetchSales(limit = 100) {
-  let q = supabaseClient
-    .from('sales')
-    .select(`*, workers(name), products(name)`)
+  let q = supabaseClient.from('sales')
+    .select(`*, workers(name), products(name, image_url)`)
     .order('date', { ascending: false })
     .order('id', { ascending: false })
     .limit(limit);
   if (!isAdmin()) q = q.eq('worker_id', currentWorker.id);
-  const { data, error } = await q;
-  if (error) { console.error(error); return []; }
+  const { data } = await q;
   return data || [];
 }
 async function fetchStock(limit = 100) {
-  const { data, error } = await supabaseClient
-    .from('stock_entries')
-    .select(`*, workers(name), products(name)`)
+  const { data } = await supabaseClient.from('stock_entries')
+    .select(`*, workers(name), products(name, image_url)`)
     .order('date', { ascending: false })
     .order('id', { ascending: false })
     .limit(limit);
-  if (error) { console.error(error); return []; }
   return data || [];
 }
 async function fetchSalesByDate(date) {
-  let q = supabaseClient
-    .from('sales')
+  let q = supabaseClient.from('sales')
     .select(`*, workers(name), products(name)`)
     .eq('date', date);
   if (!isAdmin()) q = q.eq('worker_id', currentWorker.id);
-  const { data, error } = await q;
-  if (error) { console.error(error); return []; }
+  const { data } = await q;
   return data || [];
 }
 
@@ -424,43 +519,66 @@ async function fetchSalesByDate(date) {
 async function refreshAll() {
   await Promise.all([
     loadWorkersDropdowns(),
-    loadProductsDropdowns(),
+    renderProductGrid(),
     renderWorkers(),
     renderProducts(),
     renderSales(),
     renderStock(),
     renderDashboard(),
-    loadDailyReport(),
+    loadDailyReport()
   ]);
 }
 
 async function loadWorkersDropdowns() {
   const workers = await fetchWorkers();
   const opts = workers.map(w => `<option value="${w.id}">${escapeHtml(w.name)}</option>`).join('');
-  ['saleWorker', 'stockWorker'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = opts;
-  });
-  if (!isAdmin()) {
-    document.getElementById('saleWorker').value = currentWorker.id;
-  }
+  const el = document.getElementById('saleWorker');
+  if (el) el.innerHTML = opts;
+  if (!isAdmin() && el) el.value = currentWorker.id;
 }
 
-async function loadProductsDropdowns() {
+async function renderProductGrid() {
   const products = await fetchProducts();
-  const opts = products.length
-    ? products.map(p => `<option value="${p.id}" data-price="${p.price}">${escapeHtml(p.name)} (stok: ${p.stock})</option>`).join('')
-    : '<option value="">-- Shto produkt fillimisht --</option>';
-  ['saleProduct', 'stockProduct'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = opts;
+  const search = (document.getElementById('saleSearch')?.value || '').toLowerCase();
+  const filtered = products.filter(p => 
+    !search || p.name.toLowerCase().includes(search) || (p.category || '').toLowerCase().includes(search)
+  );
+  const el = document.getElementById('saleProductGrid');
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty">Nuk ka produkte</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(p => `
+    <div class="product-card ${selectedProductId === p.id ? 'selected' : ''}" 
+         onclick="selectProduct(${p.id}, ${p.price})"
+         data-pid="${p.id}">
+      ${p.image_url 
+        ? `<img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name)}">`
+        : `<div class="no-img">📀</div>`}
+      <div class="p-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
+      <div class="p-price">€${fmt(p.price)}</div>
+      <div class="p-stock ${p.stock < 5 ? 'negative' : ''}">Stok: ${p.stock}</div>
+    </div>
+  `).join('');
+}
+
+function selectProduct(id, price) {
+  selectedProductId = id;
+  document.getElementById('salePrice').value = price;
+  document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+  document.querySelector(`.product-card[data-pid="${id}"]`)?.classList.add('selected');
+}
+
+function filterStockProducts() {
+  // Rifresko dropdown-in e produkteve sipas kategorisë
+  const cat = document.getElementById('stockCategoryFilter').value;
+  fetchProducts().then(products => {
+    const filtered = cat ? products.filter(p => p.category === cat) : products;
+    const opts = filtered.length 
+      ? filtered.map(p => `<option value="${p.id}" data-price="${p.price}">${escapeHtml(p.name)} (stok: ${p.stock})</option>`).join('')
+      : '<option value="">-- Nuk ka produkte në këtë kategori --</option>';
+    document.getElementById('stockProduct').innerHTML = opts;
   });
-  // Auto-fill price when product selected
-  const saleProduct = document.getElementById('saleProduct');
-  saleProduct.onchange = () => {
-    const opt = saleProduct.options[saleProduct.selectedIndex];
-    if (opt?.dataset?.price) document.getElementById('salePrice').value = opt.dataset.price;
-  };
 }
 
 async function renderWorkers() {
@@ -481,15 +599,27 @@ async function renderWorkers() {
 async function renderProducts() {
   if (!isAdmin()) return;
   const products = await fetchProducts();
+  const search = (document.getElementById('prodSearch')?.value || '').toLowerCase();
+  const filtered = products.filter(p => 
+    !search || p.name.toLowerCase().includes(search) || (p.category || '').toLowerCase().includes(search)
+  );
   const el = document.getElementById('productsList');
-  if (!products.length) { el.innerHTML = '<div class="empty">Nuk ka produkte</div>'; return; }
-  el.innerHTML = `<table><thead><tr><th>Emri</th><th>Kategoria</th><th>Çmimi</th><th>Stoku</th><th></th></tr></thead><tbody>
-    ${products.map(p => `<tr>
+  if (!filtered.length) { el.innerHTML = '<div class="empty">Nuk ka produkte</div>'; return; }
+  el.innerHTML = `<table><thead><tr>
+    <th>Foto</th><th>Emri</th><th>Kategoria</th><th>Çmimi</th><th>Stoku</th><th></th>
+  </tr></thead><tbody>
+    ${filtered.map(p => `<tr>
+      <td>${p.image_url 
+        ? `<img src="${escapeHtml(p.image_url)}" class="prod-thumb" alt="">`
+        : `<div class="prod-thumb-empty">📀</div>`}</td>
       <td>${escapeHtml(p.name)}</td>
-      <td>${escapeHtml(p.category || '')}</td>
+      <td><span class="badge badge-cat">${escapeHtml(p.category || '—')}</span></td>
       <td>€${fmt(p.price)}</td>
       <td>${p.stock < 5 ? `<span class="negative">${p.stock}</span>` : p.stock}</td>
-      <td><button class="btn-danger btn-sm" onclick="deleteProduct(${p.id})">Fshi</button></td>
+      <td>
+        <button class="btn-secondary btn-sm" onclick="editProduct(${p.id})">✏️</button>
+        <button class="btn-danger btn-sm" onclick="deleteProduct(${p.id})">🗑️</button>
+      </td>
     </tr>`).join('')}
   </tbody></table>`;
 }
@@ -499,14 +629,16 @@ async function renderSales() {
   const el = document.getElementById('salesList');
   if (!sales.length) { el.innerHTML = '<div class="empty">Nuk ka shitje</div>'; return; }
   el.innerHTML = `<table><thead><tr>
-    <th>Data</th>${isAdmin() ? '<th>Punëtori</th>' : ''}<th>Produkti</th><th>Sasia</th><th>Çmimi</th><th>Totali</th><th></th>
+    <th>Foto</th><th>Data</th>${isAdmin() ? '<th>Punëtori</th>' : ''}<th>Produkti</th><th>Sasia</th><th>Totali</th><th></th>
   </tr></thead><tbody>
     ${sales.map(s => `<tr>
+      <td>${s.products?.image_url 
+        ? `<img src="${escapeHtml(s.products.image_url)}" class="prod-thumb" alt="">`
+        : `<div class="prod-thumb-empty">📀</div>`}</td>
       <td>${s.date}</td>
       ${isAdmin() ? `<td>${escapeHtml(s.workers?.name || '?')}</td>` : ''}
       <td>${escapeHtml(s.products?.name || '?')}</td>
       <td>${s.qty}</td>
-      <td>€${fmt(s.price)}</td>
       <td><b>€${fmt(s.qty * s.price)}</b></td>
       <td>${isAdmin() || s.worker_id === currentWorker.id ? `<button class="btn-danger btn-sm" onclick="deleteSale(${s.id})">✕</button>` : ''}</td>
     </tr>`).join('')}
@@ -519,11 +651,13 @@ async function renderStock() {
   const el = document.getElementById('stockList');
   if (!rows.length) { el.innerHTML = '<div class="empty">Nuk ka hyrje malli</div>'; return; }
   el.innerHTML = `<table><thead><tr>
-    <th>Data</th><th>Punëtori</th><th>Produkti</th><th>Sasia</th><th>Kosto</th><th>Totali</th><th></th>
+    <th>Foto</th><th>Data</th><th>Produkti</th><th>Sasia</th><th>Çmimi</th><th>Totali</th><th></th>
   </tr></thead><tbody>
     ${rows.map(s => `<tr>
+      <td>${s.products?.image_url 
+        ? `<img src="${escapeHtml(s.products.image_url)}" class="prod-thumb" alt="">`
+        : `<div class="prod-thumb-empty">📀</div>`}</td>
       <td>${s.date}</td>
-      <td>${escapeHtml(s.workers?.name || '?')}</td>
       <td>${escapeHtml(s.products?.name || '?')}</td>
       <td><span class="badge badge-in">+${s.qty}</span></td>
       <td>€${fmt(s.cost)}</td>
@@ -540,14 +674,14 @@ async function renderDashboard() {
   const totalQty = sales.reduce((a, s) => a + s.qty, 0);
 
   document.getElementById('dashboardTitle').innerHTML = isAdmin()
-    ? `Raporti i ditës: <span id="todayDate">${d}</span>`
+    ? `Raporti i ditës: <span>${d}</span>`
     : `Shitjet e mia — ${d}`;
 
   let html = '';
   if (isAdmin()) {
     const workers = await fetchWorkers();
     html += `<div class="stat total">
-      <div class="stat-label">Totali i ditës (të gjithë)</div>
+      <div class="stat-label">Totali i ditës</div>
       <div class="stat-value">€${fmt(totalSales)}</div>
       <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${totalQty} CD të shitura</div>
     </div>`;
@@ -574,8 +708,11 @@ async function renderDashboard() {
   const recent = await fetchSales(10);
   const el = document.getElementById('recentSales');
   if (!recent.length) { el.innerHTML = '<div class="empty">Nuk ka shitje</div>'; return; }
-  el.innerHTML = `<table><thead><tr><th>Data</th>${isAdmin() ? '<th>Punëtori</th>' : ''}<th>Produkti</th><th>Sasia</th><th>Totali</th></tr></thead><tbody>
+  el.innerHTML = `<table><thead><tr><th>Foto</th><th>Data</th>${isAdmin() ? '<th>Punëtori</th>' : ''}<th>Produkti</th><th>Sasia</th><th>Totali</th></tr></thead><tbody>
     ${recent.map(s => `<tr>
+      <td>${s.products?.image_url 
+        ? `<img src="${escapeHtml(s.products.image_url)}" class="prod-thumb" alt="">`
+        : `<div class="prod-thumb-empty">📀</div>`}</td>
       <td>${s.date}</td>
       ${isAdmin() ? `<td>${escapeHtml(s.workers?.name || '?')}</td>` : ''}
       <td>${escapeHtml(s.products?.name || '?')}</td>
@@ -583,6 +720,39 @@ async function renderDashboard() {
       <td><b>€${fmt(s.qty * s.price)}</b></td>
     </tr>`).join('')}
   </tbody></table>`;
+}
+
+// ==================== IMAGE UPLOAD ====================
+let pendingImageFile = null;
+
+function previewProductImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    toast('Foto është shumë e madhe (max 5MB)', true);
+    return;
+  }
+  pendingImageFile = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('prodImagePreview').outerHTML = 
+      `<img id="prodImagePreview" src="${e.target.result}" class="image-preview" alt="">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadImage(file) {
+  if (!file) return null;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const fileName = `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { data, error } = await supabaseClient.storage
+    .from('product-images')
+    .upload(fileName, file, { cacheControl: '3600', upsert: false });
+  if (error) throw error;
+  const { data: urlData } = supabaseClient.storage
+    .from('product-images')
+    .getPublicUrl(fileName);
+  return urlData.publicUrl;
 }
 
 // ==================== ACTIONS ====================
@@ -597,13 +767,13 @@ async function addWorker() {
   if (error) return toast(error.message, true);
   document.getElementById('workerName').value = '';
   document.getElementById('workerEmail').value = '';
-  toast('Punëtori u shtua. Tani krijo user në Supabase Auth me të njëjtin email.');
+  toast('Punëtori u shtua. Krijo user në Supabase Auth.');
   refreshAll();
 }
 
 async function deleteWorker(id) {
   if (!isAdmin()) return;
-  if (!confirm('Fshi punëtorin? Shitjet e tij do mbeten.')) return;
+  if (!confirm('Fshi punëtorin?')) return;
   const { error } = await supabaseClient.from('workers').delete().eq('id', id);
   if (error) return toast(error.message, true);
   toast('U fshi');
@@ -613,15 +783,58 @@ async function deleteWorker(id) {
 async function addProduct() {
   if (!isAdmin()) return toast('Vetëm admini mund të shtojë produkte', true);
   const name = document.getElementById('prodName').value.trim();
-  const category = document.getElementById('prodCategory').value.trim();
+  const category = document.getElementById('prodCategory').value;
   const price = parseFloat(document.getElementById('prodPrice').value) || 0;
   if (!name) return toast('Shkruaj emrin', true);
-  const { error } = await supabaseClient.from('products').insert({ name, category, price, stock: 0 });
+  if (!category) return toast('Zgjidh kategorinë', true);
+
+  const btn = event.target;
+  setLoading(btn, true);
+  try {
+    let imageUrl = null;
+    if (pendingImageFile) {
+      imageUrl = await uploadImage(pendingImageFile);
+    }
+    const { error } = await supabaseClient.from('products').insert({ 
+      name, category, price, stock: 0, image_url: imageUrl 
+    });
+    if (error) throw error;
+
+    // Reset form
+    document.getElementById('prodName').value = '';
+    document.getElementById('prodCategory').value = '';
+    document.getElementById('prodPrice').value = '';
+    document.getElementById('prodImage').value = '';
+    pendingImageFile = null;
+    document.getElementById('prodImagePreview').outerHTML = 
+      '<div id="prodImagePreview" class="image-preview-empty">📷</div>';
+
+    toast('Produkti u shtua');
+    refreshAll();
+  } catch (err) {
+    toast(err.message, true);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function editProduct(id) {
+  const { data: p } = await supabaseClient.from('products').select('*').eq('id', id).single();
+  if (!p) return;
+  const newName = prompt('Emri i ri:', p.name);
+  if (newName === null) return;
+  const newPrice = prompt('Çmimi i ri (€):', p.price);
+  if (newPrice === null) return;
+  const newCategory = prompt('Kategoria e re:\n' + CATEGORIES.join(', '), p.category);
+  if (newCategory === null) return;
+
+  const { error } = await supabaseClient.from('products').update({
+    name: newName.trim() || p.name,
+    price: parseFloat(newPrice) || p.price,
+    category: newCategory.trim() || p.category
+  }).eq('id', id);
   if (error) return toast(error.message, true);
-  document.getElementById('prodName').value = '';
-  document.getElementById('prodCategory').value = '';
-  document.getElementById('prodPrice').value = '';
-  toast('Produkti u shtua');
+  toast('Produkti u përditësua');
   refreshAll();
 }
 
@@ -635,10 +848,11 @@ async function deleteProduct(id) {
 }
 
 async function addSale() {
+  if (!selectedProductId) return toast('Zgjidh një produkt', true);
   const worker_id = isAdmin()
     ? parseInt(document.getElementById('saleWorker').value)
     : currentWorker.id;
-  const product_id = parseInt(document.getElementById('saleProduct').value);
+  const product_id = selectedProductId;
   const qty = parseInt(document.getElementById('saleQty').value);
   const price = parseFloat(document.getElementById('salePrice').value);
   const date = document.getElementById('saleDate').value;
@@ -646,22 +860,19 @@ async function addSale() {
   if (!worker_id || !product_id || !qty || isNaN(price)) return toast('Plotëso të gjitha fushat', true);
   if (qty <= 0) return toast('Sasia duhet > 0', true);
 
-  const { data: prod, error: prodErr } = await supabaseClient
-    .from('products').select('stock, name').eq('id', product_id).single();
-  if (prodErr) return toast(prodErr.message, true);
+  const { data: prod } = await supabaseClient.from('products').select('stock, name').eq('id', product_id).single();
   if (prod.stock < qty) return toast(`Stok i pamjaftueshëm! Ka vetëm ${prod.stock}`, true);
 
   setLoading(document.getElementById('saleBtn'), true);
   const { error: saleErr } = await supabaseClient.from('sales').insert({ worker_id, product_id, qty, price, date });
   if (saleErr) { setLoading(document.getElementById('saleBtn'), false); return toast(saleErr.message, true); }
 
-  const { error: stockErr } = await supabaseClient
-    .from('products').update({ stock: prod.stock - qty }).eq('id', product_id);
+  await supabaseClient.from('products').update({ stock: prod.stock - qty }).eq('id', product_id);
   setLoading(document.getElementById('saleBtn'), false);
-  if (stockErr) return toast(stockErr.message, true);
 
   toast('Shitja u regjistrua');
   document.getElementById('saleQty').value = 1;
+  selectedProductId = null;
   refreshAll();
 }
 
@@ -670,7 +881,6 @@ async function deleteSale(id) {
   const { data: s } = await supabaseClient.from('sales').select('*').eq('id', id).single();
   if (!s) return;
   if (!isAdmin() && s.worker_id !== currentWorker.id) return toast('Nuk ke leje', true);
-
   const { data: prod } = await supabaseClient.from('products').select('stock').eq('id', s.product_id).single();
   await supabaseClient.from('products').update({ stock: (prod?.stock || 0) + s.qty }).eq('id', s.product_id);
   const { error } = await supabaseClient.from('sales').delete().eq('id', id);
@@ -681,22 +891,32 @@ async function deleteSale(id) {
 
 async function addStock() {
   if (!isAdmin()) return toast('Vetëm admini mund të regjistrojë hyrje malli', true);
-  const worker_id = parseInt(document.getElementById('stockWorker').value);
   const product_id = parseInt(document.getElementById('stockProduct').value);
   const qty = parseInt(document.getElementById('stockQty').value);
-  const cost = parseFloat(document.getElementById('stockCost').value) || 0;
+  const price = parseFloat(document.getElementById('stockPrice').value);
   const date = document.getElementById('stockDate').value;
-  if (!worker_id || !product_id || !qty || qty <= 0) return toast('Plotëso të gjitha fushat', true);
+  
+  if (!product_id || !qty || qty <= 0) return toast('Plotëso sasinë', true);
+  if (isNaN(price) || price < 0) return toast('Vendos çmimin e shitjes', true);
 
-  const { error: entryErr } = await supabaseClient.from('stock_entries').insert({ worker_id, product_id, qty, cost, date });
+  // Merr worker_id = admin-i që po bën hyrjen
+  const worker_id = currentWorker.id;
+
+  const { error: entryErr } = await supabaseClient.from('stock_entries').insert({ 
+    worker_id, product_id, qty, cost: price, date 
+  });
   if (entryErr) return toast(entryErr.message, true);
 
+  // Përditëso stokun + çmimin e shitjes
   const { data: prod } = await supabaseClient.from('products').select('stock').eq('id', product_id).single();
-  await supabaseClient.from('products').update({ stock: (prod?.stock || 0) + qty }).eq('id', product_id);
+  await supabaseClient.from('products').update({ 
+    stock: (prod?.stock || 0) + qty,
+    price: price
+  }).eq('id', product_id);
 
   toast('Hyrja u regjistrua');
   document.getElementById('stockQty').value = 1;
-  document.getElementById('stockCost').value = '';
+  document.getElementById('stockPrice').value = '';
   refreshAll();
 }
 
@@ -713,16 +933,14 @@ async function deleteStock(id) {
   refreshAll();
 }
 
-// ==================== REPORTS (admin only) ====================
+// ==================== REPORTS ====================
 async function loadDailyReport() {
   if (!isAdmin()) return;
   const date = document.getElementById('reportDate').value;
   if (!date) return;
   const workers = await fetchWorkers();
-  const { data: sales } = await supabaseClient
-    .from('sales').select(`*, workers(name), products(name)`).eq('date', date);
-  const { data: entries } = await supabaseClient
-    .from('stock_entries').select(`*, workers(name), products(name)`).eq('date', date);
+  const { data: sales } = await supabaseClient.from('sales').select(`*, workers(name), products(name)`).eq('date', date);
+  const { data: entries } = await supabaseClient.from('stock_entries').select(`*, workers(name), products(name)`).eq('date', date);
 
   let totalDay = 0, workerHtml = '';
   workers.forEach(w => {
@@ -758,8 +976,8 @@ async function loadDailyReport() {
 
   if (entries.length) {
     html += `<div class="card"><h2>📦 Hyrje malli (${date})</h2>
-      <table><thead><tr><th>Produkti</th><th>Sasia</th><th>Kosto</th><th>Totali</th><th>Punëtori</th></tr></thead><tbody>
-        ${entries.map(s => `<tr><td>${escapeHtml(s.products?.name || '?')}</td><td>+${s.qty}</td><td>€${fmt(s.cost)}</td><td>€${fmt(s.qty * s.cost)}</td><td>${escapeHtml(s.workers?.name || '?')}</td></tr>`).join('')}
+      <table><thead><tr><th>Produkti</th><th>Sasia</th><th>Çmimi</th><th>Totali</th></tr></thead><tbody>
+        ${entries.map(s => `<tr><td>${escapeHtml(s.products?.name || '?')}</td><td>+${s.qty}</td><td>€${fmt(s.cost)}</td><td>€${fmt(s.qty * s.cost)}</td></tr>`).join('')}
       </tbody></table></div>`;
   }
 
@@ -772,9 +990,8 @@ async function loadRangeReport() {
   const to = document.getElementById('rangeTo').value;
   if (!from || !to) return toast('Zgjidh të dyja datat', true);
 
-  const { data: sales } = await supabaseClient
-    .from('sales').select(`*, workers(name), products(name)`)
-    .gte('date', from).lte('date', to).order('date');
+  const { data: sales } = await supabaseClient.from('sales')
+    .select(`*, workers(name), products(name)`).gte('date', from).lte('date', to).order('date');
 
   const totalSales = sales.reduce((a, s) => a + s.qty * s.price, 0);
   const totalQty = sales.reduce((a, s) => a + s.qty, 0);
@@ -835,6 +1052,9 @@ async function init() {
       refreshAll();
     };
   });
+
+  // Search produkter
+  document.getElementById('saleSearch')?.addEventListener('input', renderProductGrid);
 
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
