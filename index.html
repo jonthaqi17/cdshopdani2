@@ -122,6 +122,11 @@ async function loadUser() {
 }
 
 async function logout() {
+  if (scannerActive) {
+    try { await scanner.stop(); scanner.clear(); } catch(e){}
+    scannerActive = false;
+    scanner = null;
+  }
   await db.auth.signOut();
   USER = null;
   SHporta = [];
@@ -151,6 +156,12 @@ function buildNav() {
 
 function navigate(page) {
   currentPage = page;
+  // Ndalojmë skanimin nëse është aktiv
+  if (scannerActive && scanner) {
+    try { scanner.stop(); scanner.clear(); } catch(e){}
+    scannerActive = false;
+    scanner = null;
+  }
   document.querySelectorAll('#navMenu a').forEach(a => a.classList.remove('active'));
   const el = document.getElementById('nav-' + page);
   if (el) el.classList.add('active');
@@ -230,7 +241,6 @@ async function loadProduktet() {
 }
 
 function printoBarkodin(id) {
-  // Hap faqen e barkodeve me ID specifike
   window.open('barkodet.html?print=' + id, '_blank');
 }
 
@@ -444,34 +454,64 @@ async function perfundoSshitjen() {
 }
 
 // =====================================================
-// SKANERI I KAMERËS
+// SKANERI I KAMERËS - ME FIX (ndalon pas skanimit të parë)
 // =====================================================
 async function toggleScanner() {
   const div = document.getElementById('reader');
   const txt = document.getElementById('scannerBtnTxt');
-  if (scannerActive) {
+  
+  // Nëse skaneri është aktiv → ndaloje
+  if (scannerActive && scanner) {
     try { await scanner.stop(); scanner.clear(); } catch(e){}
     scannerActive = false;
-    div.classList.add('hidden'); txt.textContent = 'Skano me kamerë'; scanner = null;
+    div.classList.add('hidden');
+    txt.textContent = 'Skano me kamerë';
+    scanner = null;
     return;
   }
+  
+  // Fillo skanimin
   div.classList.remove('hidden');
   txt.textContent = 'Ndalo skanimin';
   scanner = new Html5Qrcode("reader");
+  
+  // Flamur për të parandaluar skanimin e dyfishtë
+  let skanimPërfunduar = false;
+  
   try {
     await scanner.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 250, height: 150 } },
-      function(text) {
+      async function(text) {
+        // Nëse kemi skanuar tashmë, injoro
+        if (skanimPërfunduar) return;
+        skanimPërfunduar = true;
+        
+        // Dridhje feedback
+        if (navigator.vibrate) navigator.vibrate(100);
+        
+        // Ndalojmë skanimin menjëherë
+        try { 
+          await scanner.stop(); 
+          scanner.clear(); 
+        } catch(e){}
+        scannerActive = false;
+        div.classList.add('hidden');
+        txt.textContent = 'Skano me kamerë';
+        scanner = null;
+        
+        // Procesojmë barkodin
         document.getElementById('barkodiInput').value = text;
-        kerkoBarkod();
-        if (navigator.vibrate) navigator.vibrate(80);
-      }, function(){}
+        await kerkoBarkod();
+      }, 
+      function(){}
     );
     scannerActive = true;
   } catch (e) {
     alert('Gabim kamera: ' + e.message);
-    div.classList.add('hidden'); txt.textContent = 'Skano me kamerë';
+    div.classList.add('hidden');
+    txt.textContent = 'Skano me kamerë';
+    scanner = null;
   }
 }
 
