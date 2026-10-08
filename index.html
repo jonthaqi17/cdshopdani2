@@ -140,6 +140,7 @@ function buildNav() {
   const adminLinks = '<a href="#" onclick="navigate(\'dashboard\');return false" id="nav-dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>' +
     '<a href="#" onclick="navigate(\'produktet\');return false" id="nav-produktet"><i class="bi bi-box-seam"></i> Produktet</a>' +
     '<a href="#" onclick="navigate(\'stok\');return false" id="nav-stok"><i class="bi bi-clipboard-data"></i> Stoku</a>' +
+    '<a href="barkodet.html" target="_blank"><i class="bi bi-upc-scan"></i> Barkodet</a>' +
     '<a href="#" onclick="navigate(\'raporte\');return false" id="nav-raporte"><i class="bi bi-bar-chart"></i> Raporte</a>' +
     '<a href="#" onclick="navigate(\'perdoruesit\');return false" id="nav-perdoruesit"><i class="bi bi-people"></i> Përdoruesit</a>';
   const workerLinks = '<a href="#" onclick="navigate(\'shitje\');return false" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>';
@@ -196,7 +197,8 @@ async function renderProduktet() {
   const mc = document.getElementById('mainContent');
   mc.innerHTML = '<div class="d-flex justify-content-between mb-3 flex-wrap gap-2">' +
     '<h3>📦 Produktet</h3>' +
-    '<button class="btn btn-primary" onclick="formProdukt()"><i class="bi bi-plus-lg"></i> Shto Produkt</button></div>' +
+    '<div><button class="btn btn-outline-primary me-2" onclick="window.open(\'barkodet.html\', \'_blank\')"><i class="bi bi-upc-scan"></i> Barkodet</button>' +
+    '<button class="btn btn-primary" onclick="formProdukt()"><i class="bi bi-plus-lg"></i> Shto Produkt</button></div></div>' +
     '<div class="input-group mb-3"><input id="searchProd" class="form-control" placeholder="Kërko sipas emrit, barkodit, kategorisë..." oninput="loadProduktet()"></div>' +
     '<div class="row g-3" id="prodGrid"></div>';
   loadProduktet();
@@ -221,9 +223,15 @@ async function loadProduktet() {
     '<span class="fw-bold text-success">' + Number(p.cmimi_shitjes).toFixed(2) + ' €</span>' +
     '<span class="badge ' + (p.sasia<5?'bg-danger':'bg-success') + '">Stok: ' + p.sasia + '</span></div>' +
     '<div class="mt-2 d-flex gap-1">' +
+    '<button class="btn btn-sm btn-outline-primary flex-fill" onclick="printoBarkodin(' + p.id + ')" title="Printo barkodin"><i class="bi bi-printer"></i></button>' +
     '<button class="btn btn-sm btn-warning flex-fill" onclick=\'formProdukt(' + JSON.stringify(p).replace(/'/g,"&#39;") + ')\'><i class="bi bi-pencil"></i></button>' +
     '<button class="btn btn-sm btn-danger flex-fill" onclick="fshiProdukt(' + p.id + ')"><i class="bi bi-trash"></i></button>' +
     '</div></div></div>').join('');
+}
+
+function printoBarkodin(id) {
+  // Hap faqen e barkodeve me ID specifike
+  window.open('barkodet.html?print=' + id, '_blank');
 }
 
 function formProdukt(p) {
