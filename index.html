@@ -54,7 +54,6 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; }
 <div id="appView" class="hidden">
 <div class="container-fluid">
 <div class="row">
-
   <div class="col-md-2 sidebar">
     <div class="brand">
       <h5 class="mb-0">🏪 Dyqani</h5>
@@ -62,9 +61,7 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; }
     </div>
     <nav id="navMenu"></nav>
   </div>
-
   <div class="col-md-10 p-4" id="mainContent"></div>
-
 </div>
 </div>
 </div>
@@ -110,25 +107,16 @@ async function login() {
 async function loadUser() {
   const { data: { user } } = await db.auth.getUser();
   if (!user) return showLogin();
-  
   const { data: prof, error } = await db.from('profiles').select('*').eq('id', user.id).single();
-  
   if (error || !prof) {
     alert('Nuk u gjet profili për këtë përdorues. Kontakto adminin!');
     await db.auth.signOut();
     return showLogin();
   }
-  
-  USER = { 
-    id: user.id, 
-    email: user.email, 
-    emri: prof.emri || user.email, 
-    roli: prof.roli || 'punetor' 
-  };
-  
+  USER = { id: user.id, email: user.email, emri: prof.emri || user.email, roli: prof.roli || 'punetor' };
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('appView').classList.remove('hidden');
-  document.getElementById('userInfo').textContent = `${USER.emri} (${USER.roli})`;
+  document.getElementById('userInfo').textContent = USER.emri + ' (' + USER.roli + ')';
   buildNav();
   navigate(USER.roli === 'admin' ? 'dashboard' : 'shitje');
 }
@@ -149,19 +137,15 @@ function showLogin() {
 // NAVIGIMI
 // =====================================================
 function buildNav() {
-  const adminLinks = `
-    <a href="#" onclick="navigate('dashboard');return false" id="nav-dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a href="#" onclick="navigate('produktet');return false" id="nav-produktet"><i class="bi bi-box-seam"></i> Produktet</a>
-    <a href="#" onclick="navigate('stok');return false" id="nav-stok"><i class="bi bi-clipboard-data"></i> Stoku</a>
-    <a href="#" onclick="navigate('raporte');return false" id="nav-raporte"><i class="bi bi-bar-chart"></i> Raporte</a>
-    <a href="#" onclick="navigate('perdoruesit');return false" id="nav-perdoruesit"><i class="bi bi-people"></i> Përdoruesit</a>
-  `;
-  const workerLinks = `
-    <a href="#" onclick="navigate('shitje');return false" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>
-  `;
+  const adminLinks = '<a href="#" onclick="navigate(\'dashboard\');return false" id="nav-dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>' +
+    '<a href="#" onclick="navigate(\'produktet\');return false" id="nav-produktet"><i class="bi bi-box-seam"></i> Produktet</a>' +
+    '<a href="#" onclick="navigate(\'stok\');return false" id="nav-stok"><i class="bi bi-clipboard-data"></i> Stoku</a>' +
+    '<a href="#" onclick="navigate(\'raporte\');return false" id="nav-raporte"><i class="bi bi-bar-chart"></i> Raporte</a>' +
+    '<a href="#" onclick="navigate(\'perdoruesit\');return false" id="nav-perdoruesit"><i class="bi bi-people"></i> Përdoruesit</a>';
+  const workerLinks = '<a href="#" onclick="navigate(\'shitje\');return false" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>';
   document.getElementById('navMenu').innerHTML =
     (USER.roli === 'admin' ? adminLinks : workerLinks) +
-    `<a href="#" onclick="logout();return false" class="text-danger"><i class="bi bi-box-arrow-right"></i> Dil</a>`;
+    '<a href="#" onclick="logout();return false" class="text-danger"><i class="bi bi-box-arrow-right"></i> Dil</a>';
 }
 
 function navigate(page) {
@@ -169,7 +153,6 @@ function navigate(page) {
   document.querySelectorAll('#navMenu a').forEach(a => a.classList.remove('active'));
   const el = document.getElementById('nav-' + page);
   if (el) el.classList.add('active');
-  
   if (page === 'shitje') renderShitje();
   if (page === 'dashboard' && USER.roli === 'admin') renderDashboard();
   if (page === 'produktet' && USER.roli === 'admin') renderProduktet();
@@ -185,7 +168,6 @@ async function renderDashboard() {
   const mc = document.getElementById('mainContent');
   mc.innerHTML = '<p>Duke u ngarkuar...</p>';
   const sot = new Date().toISOString().slice(0,10);
-  
   const { count: cProd } = await db.from('produktet').select('*', { count:'exact', head:true });
   const { data: stokData } = await db.from('produktet').select('sasia');
   const totalStok = (stokData||[]).reduce((s,p)=>s+Number(p.sasia), 0);
@@ -193,22 +175,18 @@ async function renderDashboard() {
   const totalSot = (shitjetSot||[]).reduce((s,x)=>s+Number(x.totali), 0);
   const { data: stokPak } = await db.from('produktet').select('*').lt('sasia',5).order('sasia').limit(10);
 
-  mc.innerHTML = `
-    <h3 class="mb-4">📊 Dashboard</h3>
-    <div class="row g-3 mb-4">
-      <div class="col-md-4"><div class="stat bg-blue"><h6>Produkte</h6><h2>${cProd||0}</h2></div></div>
-      <div class="col-md-4"><div class="stat bg-green"><h6>Copë në stok</h6><h2>${totalStok}</h2></div></div>
-      <div class="col-md-4"><div class="stat bg-orange"><h6>Shitje sot</h6><h2>${totalSot.toFixed(2)} €</h2></div></div>
-    </div>
-    <div class="card p-3">
-      <h5>⚠️ Produkte me stok të ulët (&lt; 5)</h5>
-      ${(stokPak&&stokPak.length) ? `
-      <table class="table table-sm mb-0">
-        <thead><tr><th>Emri</th><th>Barkodi</th><th>Sasia</th></tr></thead>
-        <tbody>${stokPak.map(p=>`<tr><td>${p.emri}</td><td><code>${p.barkodi}</code></td>
-          <td><span class="badge bg-danger">${p.sasia}</span></td></tr>`).join('')}</tbody>
-      </table>` : '<p class="text-muted">Të gjitha produktet kanë stok të mjaftueshëm ✅</p>'}
-    </div>`;
+  mc.innerHTML = '<h3 class="mb-4">📊 Dashboard</h3>' +
+    '<div class="row g-3 mb-4">' +
+    '<div class="col-md-4"><div class="stat bg-blue"><h6>Produkte</h6><h2>' + (cProd||0) + '</h2></div></div>' +
+    '<div class="col-md-4"><div class="stat bg-green"><h6>Copë në stok</h6><h2>' + totalStok + '</h2></div></div>' +
+    '<div class="col-md-4"><div class="stat bg-orange"><h6>Shitje sot</h6><h2>' + totalSot.toFixed(2) + ' €</h2></div></div>' +
+    '</div>' +
+    '<div class="card p-3"><h5>⚠️ Produkte me stok të ulët (&lt; 5)</h5>' +
+    ((stokPak&&stokPak.length) ?
+      '<table class="table table-sm mb-0"><thead><tr><th>Emri</th><th>Barkodi</th><th>Sasia</th></tr></thead><tbody>' +
+      stokPak.map(p=>'<tr><td>'+p.emri+'</td><td><code>'+p.barkodi+'</code></td><td><span class="badge bg-danger">'+p.sasia+'</span></td></tr>').join('') +
+      '</tbody></table>' : '<p class="text-muted">Të gjitha produktet kanë stok të mjaftueshëm ✅</p>') +
+    '</div>';
 }
 
 // =====================================================
@@ -216,15 +194,11 @@ async function renderDashboard() {
 // =====================================================
 async function renderProduktet() {
   const mc = document.getElementById('mainContent');
-  mc.innerHTML = `
-    <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
-      <h3>📦 Produktet</h3>
-      <button class="btn btn-primary" onclick="formProdukt()"><i class="bi bi-plus-lg"></i> Shto Produkt</button>
-    </div>
-    <div class="input-group mb-3">
-      <input id="searchProd" class="form-control" placeholder="Kërko sipas emrit, barkodit, kategorisë..." oninput="loadProduktet()">
-    </div>
-    <div class="row g-3" id="prodGrid"></div>`;
+  mc.innerHTML = '<div class="d-flex justify-content-between mb-3 flex-wrap gap-2">' +
+    '<h3>📦 Produktet</h3>' +
+    '<button class="btn btn-primary" onclick="formProdukt()"><i class="bi bi-plus-lg"></i> Shto Produkt</button></div>' +
+    '<div class="input-group mb-3"><input id="searchProd" class="form-control" placeholder="Kërko sipas emrit, barkodit, kategorisë..." oninput="loadProduktet()"></div>' +
+    '<div class="row g-3" id="prodGrid"></div>';
   loadProduktet();
 }
 
@@ -233,66 +207,56 @@ async function loadProduktet() {
   if (!grid) return;
   const q = document.getElementById('searchProd')?.value.trim() || '';
   let query = db.from('produktet').select('*').order('emri');
-  if (q) query = query.or(`emri.ilike.%${q}%,barkodi.ilike.%${q}%,kategoria.ilike.%${q}%`);
+  if (q) query = query.or('emri.ilike.%' + q + '%,barkodi.ilike.%' + q + '%,kategoria.ilike.%' + q + '%');
   const { data, error } = await query;
-  
-  if (error) { grid.innerHTML = `<div class="alert alert-danger">${error.message}</div>`; return; }
+  if (error) { grid.innerHTML = '<div class="alert alert-danger">' + error.message + '</div>'; return; }
   if (!data || !data.length) { grid.innerHTML = '<p class="text-muted">Nuk ka produkte.</p>'; return; }
-  
-  grid.innerHTML = data.map(p => `
-    <div class="col-md-4 col-lg-3">
-      <div class="card prod-card p-2">
-        ${p.foto_url ? `<img src="${p.foto_url}" class="prod-foto mb-2">`
-                    : `<div class="prod-foto mb-2 d-flex align-items-center justify-content-center"><i class="bi bi-image fs-1 text-muted"></i></div>`}
-        <b>${p.emri}</b>
-        <small class="text-muted">${p.kategoria||'-'} • <code>${p.barkodi}</code></small>
-        <div class="d-flex justify-content-between mt-2 align-items-center">
-          <span class="fw-bold text-success">${Number(p.cmimi_shitjes).toFixed(2)} €</span>
-          <span class="badge ${p.sasia<5?'bg-danger':'bg-success'}">Stok: ${p.sasia}</span>
-        </div>
-        <div class="mt-2 d-flex gap-1">
-          <button class="btn btn-sm btn-warning flex-fill" onclick='formProdukt(${JSON.stringify(p).replace(/'/g,"&#39;")})'><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-danger flex-fill" onclick="fshiProdukt(${p.id})"><i class="bi bi-trash"></i></button>
-        </div>
-      </div>
-    </div>`).join('');
+  grid.innerHTML = data.map(p =>
+    '<div class="col-md-4 col-lg-3"><div class="card prod-card p-2">' +
+    (p.foto_url ? '<img src="' + p.foto_url + '" class="prod-foto mb-2">' :
+      '<div class="prod-foto mb-2 d-flex align-items-center justify-content-center"><i class="bi bi-image fs-1 text-muted"></i></div>') +
+    '<b>' + p.emri + '</b>' +
+    '<small class="text-muted">' + (p.kategoria||'-') + ' • <code>' + p.barkodi + '</code></small>' +
+    '<div class="d-flex justify-content-between mt-2 align-items-center">' +
+    '<span class="fw-bold text-success">' + Number(p.cmimi_shitjes).toFixed(2) + ' €</span>' +
+    '<span class="badge ' + (p.sasia<5?'bg-danger':'bg-success') + '">Stok: ' + p.sasia + '</span></div>' +
+    '<div class="mt-2 d-flex gap-1">' +
+    '<button class="btn btn-sm btn-warning flex-fill" onclick=\'formProdukt(' + JSON.stringify(p).replace(/'/g,"&#39;") + ')\'><i class="bi bi-pencil"></i></button>' +
+    '<button class="btn btn-sm btn-danger flex-fill" onclick="fshiProdukt(' + p.id + ')"><i class="bi bi-trash"></i></button>' +
+    '</div></div></div>').join('');
 }
 
-function formProdukt(p = null) {
+function formProdukt(p) {
   const edit = !!p;
   const ktg = ['CD','USB','SD Card','Zmadhues Zëri','Aksesor','Adapter','Kabllo Telefoni','Çanta','Tjetër'];
-  document.getElementById('modalContent').innerHTML = `
-    <div class="modal-header"><h5>${edit?'Edito':'Shto'} Produkt</h5>
-      <button class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body">
-      <div class="row g-3">
-        <div class="col-md-6"><label class="form-label">Barkodi (SKU)*</label>
-          <input id="f_barkodi" class="form-control" value="${p?.barkodi||''}" ${edit?'readonly':''}></div>
-        <div class="col-md-6"><label class="form-label">Emri*</label>
-          <input id="f_emri" class="form-control" value="${p?.emri||''}"></div>
-        <div class="col-md-6"><label class="form-label">Kategoria</label>
-          <select id="f_kategoria" class="form-select">
-            ${ktg.map(k=>`<option ${p?.kategoria===k?'selected':''}>${k}</option>`).join('')}
-          </select></div>
-        <div class="col-md-3"><label class="form-label">Blerje (€)</label>
-          <input id="f_blerjes" type="number" step="0.01" class="form-control" value="${p?.cmimi_blerjes||0}"></div>
-        <div class="col-md-3"><label class="form-label">Shitje (€)*</label>
-          <input id="f_shitjes" type="number" step="0.01" class="form-control" value="${p?.cmimi_shitjes||''}"></div>
-        <div class="col-md-4"><label class="form-label">Sasia*</label>
-          <input id="f_sasia" type="number" class="form-control" value="${p?.sasia||0}"></div>
-        <div class="col-md-8"><label class="form-label">Foto</label>
-          <input id="f_foto" type="file" accept="image/*" class="form-control"></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-bs-dismiss="modal">Anulo</button>
-      <button class="btn btn-success" id="btnRuajProdukt">💾 Ruaj</button>
-    </div>`;
-
+  document.getElementById('modalContent').innerHTML =
+    '<div class="modal-header"><h5>' + (edit?'Edito':'Shto') + ' Produkt</h5>' +
+    '<button class="btn-close" data-bs-dismiss="modal"></button></div>' +
+    '<div class="modal-body"><div class="row g-3">' +
+    '<div class="col-md-6"><label class="form-label">Barkodi (SKU)*</label>' +
+    '<input id="f_barkodi" class="form-control" value="' + (p?p.barkodi:'') + '" ' + (edit?'readonly':'') + '></div>' +
+    '<div class="col-md-6"><label class="form-label">Emri*</label>' +
+    '<input id="f_emri" class="form-control" value="' + (p?p.emri:'') + '"></div>' +
+    '<div class="col-md-6"><label class="form-label">Kategoria</label>' +
+    '<select id="f_kategoria" class="form-select">' +
+    ktg.map(k => '<option ' + (p&&p.kategoria===k?'selected':'') + '>' + k + '</option>').join('') +
+    '</select></div>' +
+    '<div class="col-md-3"><label class="form-label">Blerje (€)</label>' +
+    '<input id="f_blerjes" type="number" step="0.01" class="form-control" value="' + (p?p.cmimi_blerjes:0) + '"></div>' +
+    '<div class="col-md-3"><label class="form-label">Shitje (€)*</label>' +
+    '<input id="f_shitjes" type="number" step="0.01" class="form-control" value="' + (p?p.cmimi_shitjes:'') + '"></div>' +
+    '<div class="col-md-4"><label class="form-label">Sasia*</label>' +
+    '<input id="f_sasia" type="number" class="form-control" value="' + (p?p.sasia:0) + '"></div>' +
+    '<div class="col-md-8"><label class="form-label">Foto</label>' +
+    '<input id="f_foto" type="file" accept="image/*" class="form-control"></div>' +
+    '</div></div>' +
+    '<div class="modal-footer">' +
+    '<button class="btn btn-secondary" data-bs-dismiss="modal">Anulo</button>' +
+    '<button class="btn btn-success" id="btnRuajProdukt">💾 Ruaj</button></div>';
   const modalEl = document.getElementById('modal');
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
-  document.getElementById('btnRuajProdukt').onclick = () => ruajProdukt(p?.id || null);
+  document.getElementById('btnRuajProdukt').onclick = function() { ruajProdukt(p ? p.id : null); };
 }
 
 async function ruajProdukt(id) {
@@ -302,46 +266,33 @@ async function ruajProdukt(id) {
   const cmimi_blerjes = parseFloat(document.getElementById('f_blerjes').value||0);
   const cmimi_shitjes = parseFloat(document.getElementById('f_shitjes').value);
   const sasia = parseInt(document.getElementById('f_sasia').value||0);
-
-  if (!barkodi || !emri || isNaN(cmimi_shitjes)) {
-    return alert('Plotëso fushat e detyrueshme!');
-  }
-
+  if (!barkodi || !emri || isNaN(cmimi_shitjes)) return alert('Plotëso fushat e detyrueshme!');
   const btn = document.getElementById('btnRuajProdukt');
   btn.disabled = true;
   btn.textContent = '⏳ Duke ruajtur...';
-
   try {
     let foto_url = null;
     const fileInput = document.getElementById('f_foto');
     if (fileInput.files[0]) {
       const file = fileInput.files[0];
       const ext = file.name.split('.').pop();
-      const fn = `${barkodi}_${Date.now()}.${ext}`;
+      const fn = barkodi + '_' + Date.now() + '.' + ext;
       const { error: upErr } = await db.storage.from('produktet').upload(fn, file);
-      if (upErr) {
-        console.error('Upload error:', upErr);
-        throw new Error('Gabim foto: ' + upErr.message);
-      }
+      if (upErr) throw new Error('Gabim foto: ' + upErr.message);
       const { data: urlData } = db.storage.from('produktet').getPublicUrl(fn);
       foto_url = urlData.publicUrl;
     }
-
     const payload = { barkodi, emri, kategoria, cmimi_blerjes, cmimi_shitjes, sasia };
     if (foto_url) payload.foto_url = foto_url;
-
     let err;
     if (id) {
-      ({ error: err } = await db.from('produktet').update(payload).eq('id', id));
+      const res = await db.from('produktet').update(payload).eq('id', id);
+      err = res.error;
     } else {
-      ({ error: err } = await db.from('produktet').insert(payload));
+      const res = await db.from('produktet').insert(payload);
+      err = res.error;
     }
-
-    if (err) {
-      console.error('Insert/Update error:', err);
-      throw new Error(err.message);
-    }
-
+    if (err) throw new Error(err.message);
     bootstrap.Modal.getInstance(document.getElementById('modal')).hide();
     loadProduktet();
     alert('✅ Produkti u ruajt me sukses!');
@@ -364,44 +315,32 @@ async function fshiProdukt(id) {
 // =====================================================
 function renderShitje() {
   SHporta = [];
-  document.getElementById('mainContent').innerHTML = `
-    <h3 class="mb-3">🛒 Shitje</h3>
-    <div class="row g-3">
-      <div class="col-md-5">
-        <div class="card p-3">
-          <label class="fw-bold mb-2">Skano / Shkruaj barkodin:</label>
-          <div class="input-group mb-2">
-            <input id="barkodiInput" class="form-control form-control-lg" placeholder="Barkodi..." autocomplete="off">
-            <button class="btn btn-primary" onclick="kerkoBarkod()"><i class="bi bi-search"></i></button>
-          </div>
-          <button class="btn btn-outline-secondary w-100 mb-2" onclick="toggleScanner()">
-            <i class="bi bi-camera"></i> <span id="scannerBtnTxt">Skano me kamerë</span>
-          </button>
-          <div id="reader" class="hidden"></div>
-          <div id="produktInfo" class="mt-2"></div>
-        </div>
-      </div>
-      <div class="col-md-7">
-        <div class="card">
-          <div class="card-header bg-dark text-white">Shporta</div>
-          <div class="table-responsive">
-            <table class="table mb-0 align-middle">
-              <thead><tr><th>Produkti</th><th>Çmimi</th><th>Sasia</th><th>Totali</th><th></th></tr></thead>
-              <tbody id="shportaBody"><tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr></tbody>
-            </table>
-          </div>
-          <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h4 class="mb-0">Totali: <span id="totaliShitjes" class="text-success">0.00 €</span></h4>
-            <button class="btn btn-success btn-lg" id="btnPerfundo" onclick="perfundoSshitjen()">
-              <i class="bi bi-check-circle"></i> Përfundo
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>`;
+  document.getElementById('mainContent').innerHTML =
+    '<h3 class="mb-3">🛒 Shitje</h3>' +
+    '<div class="row g-3">' +
+    '<div class="col-md-5"><div class="card p-3">' +
+    '<label class="fw-bold mb-2">Skano / Shkruaj barkodin:</label>' +
+    '<div class="input-group mb-2">' +
+    '<input id="barkodiInput" class="form-control form-control-lg" placeholder="Barkodi..." autocomplete="off">' +
+    '<button class="btn btn-primary" onclick="kerkoBarkod()"><i class="bi bi-search"></i></button></div>' +
+    '<button class="btn btn-outline-secondary w-100 mb-2" onclick="toggleScanner()">' +
+    '<i class="bi bi-camera"></i> <span id="scannerBtnTxt">Skano me kamerë</span></button>' +
+    '<div id="reader" class="hidden"></div>' +
+    '<div id="produktInfo" class="mt-2"></div></div></div>' +
+    '<div class="col-md-7"><div class="card">' +
+    '<div class="card-header bg-dark text-white">Shporta</div>' +
+    '<div class="table-responsive"><table class="table mb-0 align-middle">' +
+    '<thead><tr><th>Produkti</th><th>Çmimi</th><th>Sasia</th><th>Totali</th><th></th></tr></thead>' +
+    '<tbody id="shportaBody"><tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr></tbody>' +
+    '</table></div>' +
+    '<div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">' +
+    '<h4 class="mb-0">Totali: <span id="totaliShitjes" class="text-success">0.00 €</span></h4>' +
+    '<button class="btn btn-success btn-lg" id="btnPerfundo" onclick="perfundoSshitjen()">' +
+    '<i class="bi bi-check-circle"></i> Përfundo</button>' +
+    '</div></div></div></div>';
   const inp = document.getElementById('barkodiInput');
   inp.focus();
-  inp.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); kerkoBarkod(); }});
+  inp.addEventListener('keypress', function(e) { if (e.key === 'Enter') { e.preventDefault(); kerkoBarkod(); } });
 }
 
 async function kerkoBarkod() {
@@ -410,14 +349,12 @@ async function kerkoBarkod() {
   if (!barkodi) return;
   const { data, error } = await db.from('produktet').select('*').eq('barkodi', barkodi).maybeSingle();
   if (error || !data) {
-    document.getElementById('produktInfo').innerHTML = `<div class="alert alert-danger">❌ Produkti nuk u gjet!</div>`;
+    document.getElementById('produktInfo').innerHTML = '<div class="alert alert-danger">❌ Produkti nuk u gjet!</div>';
     return;
   }
-  document.getElementById('produktInfo').innerHTML = `
-    <div class="alert alert-success">
-      <b>${data.emri}</b><br>
-      Çmimi: ${Number(data.cmimi_shitjes).toFixed(2)} € • Stok: ${data.sasia}
-    </div>`;
+  document.getElementById('produktInfo').innerHTML =
+    '<div class="alert alert-success"><b>' + data.emri + '</b><br>' +
+    'Çmimi: ' + Number(data.cmimi_shitjes).toFixed(2) + ' € • Stok: ' + data.sasia + '</div>';
   shtoNeshport(data);
   inp.value = '';
   inp.focus();
@@ -442,18 +379,15 @@ function renderSshporta() {
     document.getElementById('totaliShitjes').textContent = '0.00 €';
     return;
   }
-  tb.innerHTML = SHporta.map((it,i) => `
-    <tr>
-      <td>${it.emri}</td>
-      <td>${it.cmimi.toFixed(2)} €</td>
-      <td>
-        <button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(${i},-1)">−</button>
-        <span class="mx-2">${it.sasia}</span>
-        <button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(${i},1)">+</button>
-      </td>
-      <td><b>${(it.cmimi*it.sasia).toFixed(2)} €</b></td>
-      <td><button class="btn btn-sm btn-danger" onclick="hiqNgaShporta(${i})"><i class="bi bi-x"></i></button></td>
-    </tr>`).join('');
+  tb.innerHTML = SHporta.map((it,i) =>
+    '<tr><td>' + it.emri + '</td>' +
+    '<td>' + it.cmimi.toFixed(2) + ' €</td>' +
+    '<td><button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(' + i + ',-1)">−</button>' +
+    '<span class="mx-2">' + it.sasia + '</span>' +
+    '<button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(' + i + ',1)">+</button></td>' +
+    '<td><b>' + (it.cmimi*it.sasia).toFixed(2) + ' €</b></td>' +
+    '<td><button class="btn btn-sm btn-danger" onclick="hiqNgaShporta(' + i + ')"><i class="bi bi-x"></i></button></td></tr>'
+  ).join('');
   const total = SHporta.reduce((s,x)=>s+x.cmimi*x.sasia, 0);
   document.getElementById('totaliShitjes').textContent = total.toFixed(2) + ' €';
 }
@@ -467,118 +401,36 @@ function ndryshoSasi(i, delta) {
   }
   renderSshporta();
 }
+
 function hiqNgaShporta(i) { SHporta.splice(i,1); renderSshporta(); }
 
 async function perfundoSshitjen() {
   if (!SHporta.length) return alert('Shporta është bosh!');
   if (!confirm('Konfirmo shitjen?')) return;
-
   const btn = document.getElementById('btnPerfundo');
   if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Duke ruajtur...'; }
-
   try {
-    console.log('=== FILLON SHITJA ===');
-    
     for (const it of SHporta) {
-      console.log('Duke procesuar:', it.emri, 'x', it.sasia);
-      
-      // 1. Lexo stokun aktual
-      const { data: prod, error: errRead } = await db
-        .from('produktet')
-        .select('sasia, emri')
-        .eq('id', it.id)
-        .single();
-      
+      const { data: prod, error: errRead } = await db.from('produktet').select('sasia, emri').eq('id', it.id).single();
       if (errRead) throw new Error('Lexim: ' + errRead.message);
       if (!prod) throw new Error('Produkti nuk u gjet!');
       if (prod.sasia < it.sasia) throw new Error('Stok i pamjaftueshëm!');
-      
-      console.log('Stoku aktual:', prod.sasia, '→', prod.sasia - it.sasia);
-      
-      // 2. Update stokun
       const stokuRi = prod.sasia - it.sasia;
-      const { data: upd, error: errUpd } = await db
-        .from('produktet')
-        .update({ sasia: stokuRi })
-        .eq('id', it.id)
-        .select();
-      
-      console.log('Update data:', upd);
-      console.log('Update error:', errUpd);
-      
+      const { data: upd, error: errUpd } = await db.from('produktet').update({ sasia: stokuRi }).eq('id', it.id).select();
       if (errUpd) throw new Error('Update: ' + errUpd.message);
       if (!upd || upd.length === 0) throw new Error('Update ktheu bosh!');
-      
-      // 3. Regjistro shitjen
       const { error: errIns } = await db.from('shitjet').insert({
-        produkt_id: it.id,
-        emri_produktit: it.emri,
-        sasia: it.sasia,
-        cmimi_njesi: it.cmimi,
-        totali: it.cmimi * it.sasia,
-        punetor_id: USER.id,
-        punetor_emri: USER.emri
+        produkt_id: it.id, emri_produktit: it.emri, sasia: it.sasia,
+        cmimi_njesi: it.cmimi, totali: it.cmimi * it.sasia,
+        punetor_id: USER.id, punetor_emri: USER.emri
       });
-      
       if (errIns) throw new Error('Shitje: ' + errIns.message);
-      console.log('✅ U ruajt:', it.emri);
     }
-    
     alert('✅ Shitja u regjistrua dhe stoku u zvogëlua!');
     renderShitje();
   } catch (e) {
     console.error('GABIM:', e);
     alert('❌ ' + e.message);
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle"></i> Përfundo'; }
-  }
-}
-      // 1. Lexo stokun aktual
-      const { data: prod, error: errRead } = await db
-        .from('produktet')
-        .select('sasia, emri')
-        .eq('id', it.id)
-        .single();
-
-      if (errRead) throw new Error('Lexim stoku: ' + errRead.message);
-      if (!prod) throw new Error('Produkti nuk u gjet!');
-      if (prod.sasia < it.sasia) {
-        throw new Error(`Stok i pamjaftueshëm për ${it.emri}. Ka ${prod.sasia}, kërkohet ${it.sasia}`);
-      }
-
-      // 2. Zvogëlo stokun — ME .select() për kontroll
-      const stokuRi = prod.sasia - it.sasia;
-      const { data: updated, error: errUpd } = await db
-        .from('produktet')
-        .update({ sasia: stokuRi })
-        .eq('id', it.id)
-        .select();
-
-      if (errUpd) throw new Error('Update stoku: ' + errUpd.message);
-      if (!updated || updated.length === 0) {
-        throw new Error('Stoku NUK u përditësua! Kontrollo RLS policies në Supabase.');
-      }
-      console.log(`✅ Stoku: ${it.emri} ${prod.sasia} → ${stokuRi}`);
-
-      // 3. Regjistro shitjen
-      const { error: errIns } = await db.from('shitjet').insert({
-        produkt_id: it.id,
-        emri_produktit: it.emri,
-        sasia: it.sasia,
-        cmimi_njesi: it.cmimi,
-        totali: it.cmimi * it.sasia,
-        punetor_id: USER.id,
-        punetor_emri: USER.emri
-      });
-
-      if (errIns) throw new Error('Regjistrim shitjeje: ' + errIns.message);
-      console.log(`✅ Shitja u regjistrua: ${it.emri} x${it.sasia}`);
-    }
-
-    alert('✅ Shitja u regjistrua dhe stoku u zvogëlua me sukses!');
-    renderShitje();
-  } catch (e) {
-    console.error('GABIM:', e);
-    alert('❌ Gabim: ' + e.message);
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle"></i> Përfundo'; }
   }
 }
@@ -602,11 +454,11 @@ async function toggleScanner() {
     await scanner.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 250, height: 150 } },
-      (text) => {
+      function(text) {
         document.getElementById('barkodiInput').value = text;
         kerkoBarkod();
         if (navigator.vibrate) navigator.vibrate(80);
-      }, () => {}
+      }, function(){}
     );
     scannerActive = true;
   } catch (e) {
@@ -622,33 +474,21 @@ async function renderStok() {
   const mc = document.getElementById('mainContent');
   mc.innerHTML = '<p>Duke u ngarkuar...</p>';
   const { data } = await db.from('produktet').select('*').order('sasia');
-  mc.innerHTML = `
-    <h3 class="mb-3">📋 Menaxhimi i Stokut</h3>
-    <div class="card">
-      <div class="table-responsive">
-        <table class="table mb-0 align-middle">
-          <thead class="table-light"><tr>
-            <th>Foto</th><th>Barkodi</th><th>Emri</th><th>Kategoria</th><th>Stoku</th><th>Përditëso</th>
-          </tr></thead>
-          <tbody>${(data||[]).map(p=>`
-            <tr>
-              <td>${p.foto_url?`<img src="${p.foto_url}" class="thumb">`:'—'}</td>
-              <td><code>${p.barkodi}</code></td>
-              <td>${p.emri}</td>
-              <td>${p.kategoria||'-'}</td>
-              <td><span class="badge ${p.sasia<5?'bg-danger':'bg-success'}">${p.sasia}</span></td>
-              <td>
-                <div class="input-group input-group-sm" style="max-width:180px">
-                  <input id="stok_${p.id}" type="number" class="form-control" value="${p.sasia}">
-                  <button class="btn btn-primary" onclick="ruajStok(${p.id})">💾</button>
-                </div>
-              </td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+  mc.innerHTML = '<h3 class="mb-3">📋 Menaxhimi i Stokut</h3>' +
+    '<div class="card"><div class="table-responsive"><table class="table mb-0 align-middle">' +
+    '<thead class="table-light"><tr><th>Foto</th><th>Barkodi</th><th>Emri</th><th>Kategoria</th><th>Stoku</th><th>Përditëso</th></tr></thead>' +
+    '<tbody>' + (data||[]).map(p =>
+      '<tr><td>' + (p.foto_url?'<img src="'+p.foto_url+'" class="thumb">':'—') + '</td>' +
+      '<td><code>' + p.barkodi + '</code></td>' +
+      '<td>' + p.emri + '</td>' +
+      '<td>' + (p.kategoria||'-') + '</td>' +
+      '<td><span class="badge ' + (p.sasia<5?'bg-danger':'bg-success') + '">' + p.sasia + '</span></td>' +
+      '<td><div class="input-group input-group-sm" style="max-width:180px">' +
+      '<input id="stok_' + p.id + '" type="number" class="form-control" value="' + p.sasia + '">' +
+      '<button class="btn btn-primary" onclick="ruajStok(' + p.id + ')">💾</button></div></td></tr>'
+    ).join('') + '</tbody></table></div></div>';
 }
+
 async function ruajStok(id) {
   const val = parseInt(document.getElementById('stok_' + id).value);
   const { error } = await db.from('produktet').update({ sasia: val }).eq('id', id);
@@ -663,26 +503,16 @@ async function ruajStok(id) {
 async function renderRaporte() {
   const mc = document.getElementById('mainContent');
   const sot = new Date().toISOString().slice(0,10);
-  mc.innerHTML = `
-    <h3 class="mb-3">📈 Raporte</h3>
-    <div class="card p-3 mb-3">
-      <div class="row g-2 align-items-end">
-        <div class="col-md-3"><label class="form-label">Nga</label>
-          <input id="r_nga" type="date" class="form-control" value="${sot}"></div>
-        <div class="col-md-3"><label class="form-label">Deri</label>
-          <input id="r_deri" type="date" class="form-control" value="${sot}"></div>
-        <div class="col-md-3"><label class="form-label">Punëtori</label>
-          <select id="r_punetor" class="form-select"><option value="">Të gjithë</option></select></div>
-        <div class="col-md-3">
-          <button class="btn btn-primary w-100" onclick="ngarkoRaportet()">🔍 Filtro</button>
-        </div>
-      </div>
-    </div>
-    <div id="raportBody"></div>`;
-
+  mc.innerHTML = '<h3 class="mb-3">📈 Raporte</h3>' +
+    '<div class="card p-3 mb-3"><div class="row g-2 align-items-end">' +
+    '<div class="col-md-3"><label class="form-label">Nga</label><input id="r_nga" type="date" class="form-control" value="' + sot + '"></div>' +
+    '<div class="col-md-3"><label class="form-label">Deri</label><input id="r_deri" type="date" class="form-control" value="' + sot + '"></div>' +
+    '<div class="col-md-3"><label class="form-label">Punëtori</label><select id="r_punetor" class="form-select"><option value="">Të gjithë</option></select></div>' +
+    '<div class="col-md-3"><button class="btn btn-primary w-100" onclick="ngarkoRaportet()">🔍 Filtro</button></div>' +
+    '</div></div><div id="raportBody"></div>';
   const { data: pun } = await db.from('profiles').select('*').eq('roli','punetor');
   const sel = document.getElementById('r_punetor');
-  (pun||[]).forEach(p => sel.innerHTML += `<option value="${p.id}">${p.emri}</option>`);
+  (pun||[]).forEach(p => { sel.innerHTML += '<option value="' + p.id + '">' + p.emri + '</option>'; });
   ngarkoRaportet();
 }
 
@@ -692,21 +522,15 @@ async function ngarkoRaportet() {
   const pid = document.getElementById('r_punetor').value;
   const rb = document.getElementById('raportBody');
   rb.innerHTML = '<p>Duke u ngarkuar...</p>';
-
-  let q = db.from('shitjet').select('*')
-    .gte('krijuar_me', nga + 'T00:00:00')
-    .lte('krijuar_me', deri + 'T23:59:59')
-    .order('krijuar_me', { ascending:false });
+  let q = db.from('shitjet').select('*').gte('krijuar_me', nga + 'T00:00:00').lte('krijuar_me', deri + 'T23:59:59').order('krijuar_me', { ascending:false });
   if (pid) q = q.eq('punetor_id', pid);
   const { data: shitjet } = await q;
-
   const totalet = {};
   (shitjet||[]).forEach(s => {
     totalet[s.punetor_emri] = totalet[s.punetor_emri] || { nr:0, total:0 };
     totalet[s.punetor_emri].nr++;
     totalet[s.punetor_emri].total += Number(s.totali);
   });
-
   const ditore = {};
   (shitjet||[]).forEach(s => {
     const d = s.krijuar_me.slice(0,10);
@@ -714,67 +538,26 @@ async function ngarkoRaportet() {
     ditore[d].nr++;
     ditore[d].total += Number(s.totali);
   });
-
   const { data: mujore } = await db.from('raport_mujor').select('*').limit(12);
   const totali = (shitjet||[]).reduce((s,x)=>s+Number(x.totali), 0);
-
-  rb.innerHTML = `
-    <div class="card p-3 mb-3">
-      <h5>💰 Totali për periudhën: <span class="text-success">${totali.toFixed(2)} €</span> (${shitjet?.length||0} shitje)</h5>
-    </div>
-
-    <div class="row g-3 mb-3">
-      <div class="col-md-6">
-        <div class="card p-3">
-          <h5>👤 Raport sipas punëtorit</h5>
-          <table class="table table-sm mb-0">
-            <thead><tr><th>Punëtori</th><th>Shitje</th><th>Totali (€)</th></tr></thead>
-            <tbody>${Object.entries(totalet).map(([k,v])=>`
-              <tr><td>${k}</td><td>${v.nr}</td><td><b>${v.total.toFixed(2)}</b></td></tr>`).join('') ||
-              '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card p-3">
-          <h5>📅 Raport ditor</h5>
-          <table class="table table-sm mb-0">
-            <thead><tr><th>Dita</th><th>Shitje</th><th>Totali (€)</th></tr></thead>
-            <tbody>${Object.entries(ditore).sort().reverse().map(([k,v])=>`
-              <tr><td>${k}</td><td>${v.nr}</td><td><b>${v.total.toFixed(2)}</b></td></tr>`).join('') ||
-              '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="card p-3 mb-3">
-      <h5>📆 Raport mujor (12 muajt e fundit)</h5>
-      <table class="table table-sm mb-0">
-        <thead><tr><th>Muaji</th><th>Shitje</th><th>Totali (€)</th></tr></thead>
-        <tbody>${(mujore||[]).map(m=>`
-          <tr><td>${m.muaji}</td><td>${m.nr_shitjesh}</td><td><b>${Number(m.totali).toFixed(2)}</b></td></tr>`).join('') ||
-          '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>'}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card p-3">
-      <h5>🧾 Detajet e shitjeve</h5>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Data</th><th>Produkti</th><th>Punëtori</th><th>Sasia</th><th>Totali</th></tr></thead>
-          <tbody>${(shitjet||[]).map(s=>`
-            <tr><td>${new Date(s.krijuar_me).toLocaleString('sq-AL')}</td>
-                <td>${s.emri_produktit}</td><td>${s.punetor_emri}</td>
-                <td>${s.sasia}</td><td><b>${Number(s.totali).toFixed(2)} €</b></td></tr>`).join('') ||
-                '<tr><td colspan="5" class="text-muted">Nuk ka shitje</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+  rb.innerHTML = '<div class="card p-3 mb-3"><h5>💰 Totali për periudhën: <span class="text-success">' + totali.toFixed(2) + ' €</span> (' + (shitjet?.length||0) + ' shitje)</h5></div>' +
+    '<div class="row g-3 mb-3">' +
+    '<div class="col-md-6"><div class="card p-3"><h5>👤 Raport sipas punëtorit</h5>' +
+    '<table class="table table-sm mb-0"><thead><tr><th>Punëtori</th><th>Shitje</th><th>Totali (€)</th></tr></thead><tbody>' +
+    (Object.entries(totalet).map(([k,v]) => '<tr><td>'+k+'</td><td>'+v.nr+'</td><td><b>'+v.total.toFixed(2)+'</b></td></tr>').join('') || '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>') +
+    '</tbody></table></div></div>' +
+    '<div class="col-md-6"><div class="card p-3"><h5>📅 Raport ditor</h5>' +
+    '<table class="table table-sm mb-0"><thead><tr><th>Dita</th><th>Shitje</th><th>Totali (€)</th></tr></thead><tbody>' +
+    (Object.entries(ditore).sort().reverse().map(([k,v]) => '<tr><td>'+k+'</td><td>'+v.nr+'</td><td><b>'+v.total.toFixed(2)+'</b></td></tr>').join('') || '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>') +
+    '</tbody></table></div></div></div>' +
+    '<div class="card p-3 mb-3"><h5>📆 Raport mujor (12 muajt e fundit)</h5>' +
+    '<table class="table table-sm mb-0"><thead><tr><th>Muaji</th><th>Shitje</th><th>Totali (€)</th></tr></thead><tbody>' +
+    ((mujore||[]).map(m => '<tr><td>'+m.muaji+'</td><td>'+m.nr_shitjesh+'</td><td><b>'+Number(m.totali).toFixed(2)+'</b></td></tr>').join('') || '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>') +
+    '</tbody></table></div>' +
+    '<div class="card p-3"><h5>🧾 Detajet e shitjeve</h5><div class="table-responsive">' +
+    '<table class="table table-sm mb-0"><thead><tr><th>Data</th><th>Produkti</th><th>Punëtori</th><th>Sasia</th><th>Totali</th></tr></thead><tbody>' +
+    ((shitjet||[]).map(s => '<tr><td>'+new Date(s.krijuar_me).toLocaleString('sq-AL')+'</td><td>'+s.emri_produktit+'</td><td>'+s.punetor_emri+'</td><td>'+s.sasia+'</td><td><b>'+Number(s.totali).toFixed(2)+' €</b></td></tr>').join('') || '<tr><td colspan="5" class="text-muted">Nuk ka shitje</td></tr>') +
+    '</tbody></table></div></div>';
 }
 
 // =====================================================
@@ -783,31 +566,16 @@ async function ngarkoRaportet() {
 async function renderPerdoruesit() {
   const mc = document.getElementById('mainContent');
   const { data } = await db.from('profiles').select('*');
-  mc.innerHTML = `
-    <h3 class="mb-3">👥 Përdoruesit</h3>
-    <div class="card mb-3 p-3">
-      <h6>➕ Shto punëtor të re</h6>
-      <div class="alert alert-info small">
-        Për të shtuar punëtor: shko në <b>Supabase → Authentication → Users → Add User</b>
-        dhe vendos në <b>User Metadata</b>: <code>{"emri":"emri_i_punetorit","roli":"punetor"}</code>
-      </div>
-      <table class="table mb-0">
-        <thead><tr><th>Emri</th><th>Roli</th><th>Aktiv</th><th>Veprime</th></tr></thead>
-        <tbody>${(data||[]).map(u=>`
-          <tr>
-            <td><b>${u.emri}</b></td>
-            <td><span class="badge ${u.roli==='admin'?'bg-danger':'bg-primary'}">${u.roli}</span></td>
-            <td>${u.aktiv?'✅':'❌'}</td>
-            <td>
-              <button class="btn btn-sm btn-warning" onclick="ndryshoRolin('${u.id}','${u.roli==='admin'?'punetor':'admin'}')">
-                Bëj ${u.roli==='admin'?'Punëtor':'Admin'}
-              </button>
-              <button class="btn btn-sm btn-danger" onclick="fshiPerdorues('${u.id}')">Fshij</button>
-            </td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
+  mc.innerHTML = '<h3 class="mb-3">👥 Përdoruesit</h3>' +
+    '<div class="card mb-3 p-3"><h6>➕ Shto punëtor të re</h6>' +
+    '<div class="alert alert-info small">Për të shtuar punëtor: shko në <b>Supabase → Authentication → Users → Add User</b> dhe vendos në <b>User Metadata</b>: <code>{"emri":"emri_i_punetorit","roli":"punetor"}</code></div>' +
+    '<table class="table mb-0"><thead><tr><th>Emri</th><th>Roli</th><th>Aktiv</th><th>Veprime</th></tr></thead><tbody>' +
+    (data||[]).map(u => '<tr><td><b>'+u.emri+'</b></td>' +
+      '<td><span class="badge ' + (u.roli==='admin'?'bg-danger':'bg-primary') + '">'+u.roli+'</span></td>' +
+      '<td>' + (u.aktiv?'✅':'❌') + '</td>' +
+      '<td><button class="btn btn-sm btn-warning" onclick="ndryshoRolin(\'' + u.id + '\',\'' + (u.roli==='admin'?'punetor':'admin') + '\')">Bëj ' + (u.roli==='admin'?'Punëtor':'Admin') + '</button> ' +
+      '<button class="btn btn-sm btn-danger" onclick="fshiPerdorues(\'' + u.id + '\')">Fshij</button></td></tr>'
+    ).join('') + '</tbody></table></div>';
 }
 
 async function ndryshoRolin(id, roli) {
@@ -826,11 +594,11 @@ async function fshiPerdorues(id) {
 // =====================================================
 // INICIALIZIMI
 // =====================================================
-db.auth.onAuthStateChange((event) => {
+db.auth.onAuthStateChange(function(event) {
   if (event === 'SIGNED_OUT') showLogin();
 });
 
-window.addEventListener('load', async () => {
+window.addEventListener('load', async function() {
   const { data: { session } } = await db.auth.getSession();
   if (session) await loadUser();
 });
