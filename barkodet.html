@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gjeneratori i Barkodeve</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<style>
+body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
+.card { border-radius:12px; border:none; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+.barcode-item { 
+  text-align:center; 
+  padding:12px; 
+  border:1px dashed #cbd5e1; 
+  border-radius:8px; 
+  background:#fff; 
+  page-break-inside: avoid;
+  margin-bottom:12px;
+}
+.barcode-item .emri { 
+  font-size:13px; 
+  font-weight:600; 
+  margin-bottom:4px; 
+  overflow:hidden; 
+  text-overflow:ellipsis; 
+  white-space:nowrap;
+}
+.barcode-item .cmimi { 
+  font-size:12px; 
+  color:#059669; 
+  font-weight:600; 
+  margin-top:4px;
+}
+.barcode-item svg { 
+  max-width:100%; 
+  height:auto;
+  display:block;
+  margin:0 auto;
+}
+
+.barcode-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap:12px;
+}
+
+@media print {
+  body { background:#fff !important; padding:0 !important; }
+  .no-print { display:none !important; }
+  .barcode-item { 
+    border:1px solid #e2e8f0 !important; 
+    page-break-inside: avoid;
+    margin:0 !important;
+    padding:8px !important;
+  }
+  .barcode-grid {
+    display:grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap:6px !important;
+  }
+  .container-fluid { padding:0 !important; }
+  @page { size: A4; margin: 8mm; }
+}
+</style>
+</head>
+<body>
+
+<div class="no-print">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h3 class="mb-0">🏷️ Gjeneratori i Barkodeve</h3>
+    <div>
+      <button class="btn btn-outline-secondary" onclick="window.location.href='./'">
+        <i class="bi bi-arrow-left"></i> Kthehu
+      </button>
+      <button class="btn btn-primary" onclick="window.print()">
+        <i class="bi bi-printer"></i> Printo
+      </button>
+    </div>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Kërko produkt</label>
+        <input id="searchInput" class="form-control" placeholder="Emri ose barkodi..." oninput="loadProduktet()">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Kategoria</label>
+        <select id="katSelect" class="form-select" onchange="loadProduktet()">
+          <option value="">Të gjitha</option>
+          <option>CD</option>
+          <option>USB</option>
+          <option>SD Card</option>
+          <option>Zmadhues Zëri</option>
+          <option>Aksesor</option>
+          <option>Adapter</option>
+          <option>Kabllo Telefoni</option>
+          <option>Çanta</option>
+          <option>Tjetër</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Madhësia</label>
+        <select id="sizeSelect" class="form-select" onchange="renderBarkodet()">
+          <option value="small">E vogël</option>
+          <option value="medium" selected>Mesatare</option>
+          <option value="large">E madhe</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Shfaq</label>
+        <select id="showSelect" class="form-select" onchange="renderBarkodet()">
+          <option value="both">Barkod + Emër + Çmim</option>
+          <option value="barcode">Vetëm Barkod</option>
+          <option value="name">Barkod + Emër</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-success w-100" onclick="zgjidhTëgjitha()">
+          <i class="bi bi-check-all"></i> Zgjidh / Hiq të gjitha
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div><span id="infoText" class="text-muted">Duke u ngarkuar...</span></div>
+      <div><span class="badge bg-primary" id="selectedCount">0 të zgjedhur</span></div>
+    </div>
+  </div>
+
+  <div class="card p-3 mb-3" style="max-height:400px; overflow-y:auto;">
+    <h6 class="mb-3">📦 Zgjidh produktet:</h6>
+    <div id="prodList"></div>
+  </div>
+</div>
+
+<div id="barkodArea">
+  <div class="barcode-grid" id="barcodeGrid"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://rhkaqtpfhcyajyslnvln.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa2FxdHBmaGN5YWp5c2xudmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3Mzc1OTQsImV4cCI6MjA5MDMxMzU5NH0.oaObjuascv482VGXD7p-loOZY048mt1LbwJlWcZyCSE';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let PRODUKTET = [];
+let SELECTED = new Set();
+
+async function checkAuth() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) {
+    alert('Duhet të hysh si admin!');
+    window.location.href = './';
+    return false;
+  }
+  const { data: prof } = await db.from('profiles').select('*').eq('id', user.id).single();
+  if (!prof || prof.roli !== 'admin') {
+    alert('Vetëm admini ka qasje!');
+    window.location.href = './';
+    return false;
+  }
+  return true;
+}
+
+async function loadProduktet() {
+  const q = document.getElementById('searchInput').value.trim();
+  const kat = document.getElementById('katSelect').value;
+  let query = db.from('produktet').select('*').order('emri');
+  if (q) query = query.or('emri.ilike.%' + q + '%,barkodi.ilike.%' + q + '%');
+  if (kat) query = query.eq('kategoria', kat);
+  const { data, error } = await query;
+  if (error) { 
+    document.getElementById('prodList').innerHTML = '<div class="alert alert-danger">' + error.message + '</div>';
+    return;
+  }
+  PRODUKTET = data || [];
+  renderLista();
+  renderBarkodet();
+}
+
+function renderLista() {
+  const list = document.getElementById('prodList');
+  if (!PRODUKTET.length) {
+    list.innerHTML = '<p class="text-muted">Nuk ka produkte.</p>';
+    document.getElementById('infoText').textContent = '0 produkte';
+    return;
+  }
+  document.getElementById('infoText').textContent = PRODUKTET.length + ' produkte të gjetura';
+  list.innerHTML = PRODUKTET.map(p => {
+    const checked = SELECTED.has(p.id) ? 'checked' : '';
+    return '<div class="form-check mb-2 p-2 border rounded">' +
+      '<input class="form-check-input" type="checkbox" id="chk_' + p.id + '" ' + checked + 
+      ' onchange="toggleSelect(' + p.id + ')">' +
+      '<label class="form-check-label w-100" for="chk_' + p.id + '" style="cursor:pointer">' +
+      '<b>' + p.emri + '</b> ' +
+      '<small class="text-muted">• <code>' + p.barkodi + '</code>' +
+      (p.kategoria ? ' • ' + p.kategoria : '') +
+      ' • ' + Number(p.cmimi_shitjes).toFixed(2) + ' €' +
+      ' • Stok: ' + p.sasia + '</small>' +
+      '</label></div>';
+  }).join('');
+  updateCount();
+}
+
+function toggleSelect(id) {
+  if (SELECTED.has(id)) SELECTED.delete(id);
+  else SELECTED.add(id);
+  updateCount();
+  renderBarkodet();
+}
+
+function zgjidhTëgjitha() {
+  if (SELECTED.size === PRODUKTET.length) {
+    SELECTED.clear();
+  } else {
+    PRODUKTET.forEach(p => SELECTED.add(p.id));
+  }
+  renderLista();
+  renderBarkodet();
+}
+
+function updateCount() {
+  document.getElementById('selectedCount').textContent = SELECTED.size + ' të zgjedhur';
+}
+
+function renderBarkodet() {
+  const grid = document.getElementById('barcodeGrid');
+  const size = document.getElementById('sizeSelect').value;
+  const show = document.getElementById('showSelect').value;
+  const sizeMap = {
+    small:  { width: 1.2, height: 30, fontSize: 10, displayValue: true },
+    medium: { width: 1.8, height: 45, fontSize: 12, displayValue: true },
+    large:  { width: 2.5, height: 60, fontSize: 14, displayValue: true }
+  };
+  const cfg = sizeMap[size];
+  const selected = PRODUKTET.filter(p => SELECTED.has(p.id));
+  if (!selected.length) {
+    grid.innerHTML = '<p class="text-muted text-center p-4">Zgjidh produkte për të gjeneruar barkodet.</p>';
+    return;
+  }
+  grid.innerHTML = selected.map(p => 
+    '<div class="barcode-item">' +
+    (show !== 'barcode' ? '<div class="emri">' + p.emri + '</div>' : '') +
+    '<svg class="barcode" data-barkod="' + p.barkodi + '"></svg>' +
+    (show === 'both' ? '<div class="cmimi">' + Number(p.cmimi_shitjes).toFixed(2) + ' €</div>' : '') +
+    '</div>'
+  ).join('');
+  document.querySelectorAll('.barcode').forEach(svg => {
+    try {
+      JsBarcode(svg, svg.getAttribute('data-barkod'), {
+        format: 'CODE128',
+        width: cfg.width,
+        height: cfg.height,
+        fontSize: cfg.fontSize,
+        displayValue: cfg.displayValue,
+        margin: 4,
+        lineColor: '#000',
+        background: '#fff'
+      });
+    } catch (e) {
+      console.error('Gabim barkod:', e, svg.getAttribute('data-barkod'));
+    }
+  });
+}
+
+// Kontrollo nëse ka parametër ?print=ID
+async function handlePrintParam() {
+  const params = new URLSearchParams(window.location.search);
+  const printId = params.get('print');
+  if (printId) {
+    const { data } = await db.from('produktet').select('*').eq('id', printId).single();
+    if (data) {
+      SELECTED.add(data.id);
+      PRODUKTET = [data];
+      renderLista();
+      renderBarkodet();
+      setTimeout(() => window.print(), 500);
+    }
+  }
+}
+
+window.addEventListener('load', async () => {
+  const ok = await checkAuth();
+  if (!ok) return;
+  await loadProduktet();
+  await handlePrintParam();
+});
+</script>
+</body>
+</html>
