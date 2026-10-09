@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gjeneratori i Barkodeve</title>
+<title>Gjeneratori i Barkodeve 30x25mm</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -12,58 +12,111 @@
 <style>
 body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
 .card { border-radius:12px; border:none; box-shadow:0 2px 10px rgba(0,0,0,.06); }
-.barcode-item { 
-  text-align:center; 
-  padding:12px; 
-  border:1px dashed #cbd5e1; 
-  border-radius:8px; 
-  background:#fff; 
+
+/* ===== ETIKETA 30x25 mm ===== */
+.etiketë {
+  width: 30mm;
+  height: 25mm;
+  padding: 1mm;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   page-break-inside: avoid;
-  margin-bottom:12px;
-}
-.barcode-item .emri { 
-  font-size:13px; 
-  font-weight:600; 
-  margin-bottom:4px; 
-  overflow:hidden; 
-  text-overflow:ellipsis; 
-  white-space:nowrap;
-}
-.barcode-item .cmimi { 
-  font-size:12px; 
-  color:#059669; 
-  font-weight:600; 
-  margin-top:4px;
-}
-.barcode-item svg { 
-  max-width:100%; 
-  height:auto;
-  display:block;
-  margin:0 auto;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
 }
 
-.barcode-grid {
-  display:grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap:12px;
+.etiketë .emri {
+  font-size: 7pt;
+  font-weight: bold;
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.1;
+  color: #000;
 }
 
+.etiketë .barkod-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+.etiketë svg {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+.etiketë .info {
+  font-size: 6pt;
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+  color: #000;
+}
+
+.etiketë .cmimi {
+  font-weight: bold;
+  color: #059669;
+}
+
+/* Layout i etiketave në ekran */
+.etiketat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 30mm);
+  gap: 3mm;
+  justify-content: center;
+  padding: 10mm;
+  background: #fff;
+  border-radius: 12px;
+}
+
+/* ===== PRINT ===== */
 @media print {
-  body { background:#fff !important; padding:0 !important; }
-  .no-print { display:none !important; }
-  .barcode-item { 
-    border:1px solid #e2e8f0 !important; 
-    page-break-inside: avoid;
-    margin:0 !important;
-    padding:8px !important;
+  body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+  .no-print { display: none !important; }
+  
+  .etiketat-grid {
+    display: grid !important;
+    grid-template-columns: repeat(6, 30mm) !important;  /* 6 kolona në A4 = 180mm */
+    gap: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    border-radius: 0 !important;
   }
-  .barcode-grid {
-    display:grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap:6px !important;
+  
+  .etiketë {
+    border: 1px dashed #ddd !important;
+    margin: 0 !important;
+    box-shadow: none !important;
   }
-  .container-fluid { padding:0 !important; }
-  @page { size: A4; margin: 8mm; }
+  
+  @page { 
+    size: A4; 
+    margin: 5mm; 
+  }
+}
+
+/* Kontrollet */
+.kontroll-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
 }
 </style>
 </head>
@@ -71,7 +124,7 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
 
 <div class="no-print">
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h3 class="mb-0">🏷️ Gjeneratori i Barkodeve</h3>
+    <h3 class="mb-0">🏷️ Barkode 30×25mm</h3>
     <div>
       <button class="btn btn-outline-secondary" onclick="window.location.href='./'">
         <i class="bi bi-arrow-left"></i> Kthehu
@@ -82,7 +135,7 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
     </div>
   </div>
 
-  <div class="card p-3 mb-3">
+  <div class="kontroll-panel">
     <div class="row g-3 align-items-end">
       <div class="col-md-3">
         <label class="form-label">Kërko produkt</label>
@@ -104,20 +157,17 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
         </select>
       </div>
       <div class="col-md-2">
-        <label class="form-label">Madhësia</label>
-        <select id="sizeSelect" class="form-select" onchange="renderBarkodet()">
-          <option value="small">E vogël</option>
-          <option value="medium" selected>Mesatare</option>
-          <option value="large">E madhe</option>
+        <label class="form-label">Lloji i etiketës</label>
+        <select id="labelSelect" class="form-select" onchange="renderBarkodet()">
+          <option value="both" selected>Emër + Barkod + Çmim</option>
+          <option value="name">Emër + Barkod</option>
+          <option value="barcode">Vetëm Barkod</option>
+          <option value="price">Barkod + Çmim</option>
         </select>
       </div>
       <div class="col-md-2">
-        <label class="form-label">Shfaq</label>
-        <select id="showSelect" class="form-select" onchange="renderBarkodet()">
-          <option value="both">Barkod + Emër + Çmim</option>
-          <option value="barcode">Vetëm Barkod</option>
-          <option value="name">Barkod + Emër</option>
-        </select>
+        <label class="form-label">Kopje për secilin</label>
+        <input id="copiesInput" type="number" class="form-control" value="1" min="1" max="20" onchange="renderBarkodet()">
       </div>
       <div class="col-md-3">
         <button class="btn btn-success w-100" onclick="zgjidhTëgjitha()">
@@ -127,22 +177,20 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
     </div>
   </div>
 
-  <div class="card p-3 mb-3">
+  <div class="kontroll-panel">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div><span id="infoText" class="text-muted">Duke u ngarkuar...</span></div>
       <div><span class="badge bg-primary" id="selectedCount">0 të zgjedhur</span></div>
     </div>
   </div>
 
-  <div class="card p-3 mb-3" style="max-height:400px; overflow-y:auto;">
+  <div class="kontroll-panel" style="max-height:400px; overflow-y:auto;">
     <h6 class="mb-3">📦 Zgjidh produktet:</h6>
     <div id="prodList"></div>
   </div>
 </div>
 
-<div id="barkodArea">
-  <div class="barcode-grid" id="barcodeGrid"></div>
-</div>
+<div class="etiketat-grid" id="etiketatGrid"></div>
 
 <script>
 const SUPABASE_URL = 'https://rhkaqtpfhcyajyslnvln.supabase.co';
@@ -154,6 +202,9 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 let PRODUKTET = [];
 let SELECTED = new Set();
 
+// =====================================================
+// AUTH CHECK
+// =====================================================
 async function checkAuth() {
   const { data: { user } } = await db.auth.getUser();
   if (!user) {
@@ -170,6 +221,9 @@ async function checkAuth() {
   return true;
 }
 
+// =====================================================
+// NGARKO PRODUKTET
+// =====================================================
 async function loadProduktet() {
   const q = document.getElementById('searchInput').value.trim();
   const kat = document.getElementById('katSelect').value;
@@ -231,37 +285,61 @@ function updateCount() {
   document.getElementById('selectedCount').textContent = SELECTED.size + ' të zgjedhur';
 }
 
+// =====================================================
+// RENDER ETIKETAT 30x25mm
+// =====================================================
 function renderBarkodet() {
-  const grid = document.getElementById('barcodeGrid');
-  const size = document.getElementById('sizeSelect').value;
-  const show = document.getElementById('showSelect').value;
-  const sizeMap = {
-    small:  { width: 1.2, height: 30, fontSize: 10, displayValue: true },
-    medium: { width: 1.8, height: 45, fontSize: 12, displayValue: true },
-    large:  { width: 2.5, height: 60, fontSize: 14, displayValue: true }
-  };
-  const cfg = sizeMap[size];
+  const grid = document.getElementById('etiketatGrid');
+  const mode = document.getElementById('labelSelect').value;
+  const copies = parseInt(document.getElementById('copiesInput').value) || 1;
   const selected = PRODUKTET.filter(p => SELECTED.has(p.id));
+
   if (!selected.length) {
-    grid.innerHTML = '<p class="text-muted text-center p-4">Zgjidh produkte për të gjeneruar barkodet.</p>';
+    grid.innerHTML = '<p class="text-muted text-center p-4" style="grid-column: 1/-1;">Zgjidh produkte për të gjeneruar etiketat.</p>';
     return;
   }
-  grid.innerHTML = selected.map(p => 
-    '<div class="barcode-item">' +
-    (show !== 'barcode' ? '<div class="emri">' + p.emri + '</div>' : '') +
-    '<svg class="barcode" data-barkod="' + p.barkodi + '"></svg>' +
-    (show === 'both' ? '<div class="cmimi">' + Number(p.cmimi_shitjes).toFixed(2) + ' €</div>' : '') +
-    '</div>'
-  ).join('');
+
+  // Ndërto listën e etiketave (me kopje)
+  let etiketat = [];
+  selected.forEach(p => {
+    for (let i = 0; i < copies; i++) {
+      etiketat.push(p);
+    }
+  });
+
+  grid.innerHTML = etiketat.map(p => {
+    let content = '';
+    if (mode === 'both') {
+      content = 
+        '<div class="emri">' + p.emri + '</div>' +
+        '<div class="barkod-wrap"><svg class="barcode" data-barkod="' + p.barkodi + '"></svg></div>' +
+        '<div class="info">' + p.barkodi + ' • <span class="cmimi">' + Number(p.cmimi_shitjes).toFixed(2) + '€</span></div>';
+    } else if (mode === 'name') {
+      content = 
+        '<div class="emri">' + p.emri + '</div>' +
+        '<div class="barkod-wrap"><svg class="barcode" data-barkod="' + p.barkodi + '"></svg></div>' +
+        '<div class="info">' + p.barkodi + '</div>';
+    } else if (mode === 'price') {
+      content = 
+        '<div class="barkod-wrap"><svg class="barcode" data-barkod="' + p.barkodi + '"></svg></div>' +
+        '<div class="info">' + p.barkodi + ' • <span class="cmimi">' + Number(p.cmimi_shitjes).toFixed(2) + '€</span></div>';
+    } else {
+      content = 
+        '<div class="barkod-wrap"><svg class="barcode" data-barkod="' + p.barkodi + '"></svg></div>';
+    }
+    return '<div class="etiketë">' + content + '</div>';
+  }).join('');
+
+  // Gjenero barkodet SVG me dimensione të përshtatura për 30x25mm
   document.querySelectorAll('.barcode').forEach(svg => {
     try {
       JsBarcode(svg, svg.getAttribute('data-barkod'), {
         format: 'CODE128',
-        width: cfg.width,
-        height: cfg.height,
-        fontSize: cfg.fontSize,
-        displayValue: cfg.displayValue,
-        margin: 4,
+        width: 1.1,           // Vija më të holla për etiketë të vogël
+        height: 35,           // Lartësia në px (~9mm)
+        fontSize: 8,          // Font i vogël
+        displayValue: false,  // Nuk shfaqim vlerën (e shfaqim veçmas)
+        margin: 1,
         lineColor: '#000',
         background: '#fff'
       });
@@ -271,7 +349,9 @@ function renderBarkodet() {
   });
 }
 
-// Kontrollo nëse ka parametër ?print=ID
+// =====================================================
+// HANDLE ?print=ID (nga produkte)
+// =====================================================
 async function handlePrintParam() {
   const params = new URLSearchParams(window.location.search);
   const printId = params.get('print');
@@ -282,11 +362,14 @@ async function handlePrintParam() {
       PRODUKTET = [data];
       renderLista();
       renderBarkodet();
-      setTimeout(() => window.print(), 500);
+      setTimeout(() => window.print(), 600);
     }
   }
 }
 
+// =====================================================
+// INICIALIZIMI
+// =====================================================
 window.addEventListener('load', async () => {
   const ok = await checkAuth();
   if (!ok) return;
