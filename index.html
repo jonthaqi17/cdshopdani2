@@ -345,7 +345,9 @@
             <label>Shënim</label>
             <input type="text" id="cart-shenim" placeholder="opsional">
             <div style="margin-top:12px; display:flex; gap:8px;">
-              <button class="btn-success btn-lg" style="flex:2;" onclick="perfundoShitje()">✅ Përfundo & Printo</button>
+              <button class="btn-success btn-lg" style="flex:2;" onclick="perfundoS shitje()">✅ Përfundo & Printo</button>
+                                              ↑↑↑
+                                          KA NJË HAPËSIRË!
               <button class="btn-danger btn-lg" style="flex:1;" onclick="pastroCart()">🗑️</button>
             </div>
             <button class="btn-secondary btn-block" style="margin-top:8px;" onclick="ruajSiDraft()">💾 Ruaj si Draft</button>
@@ -1320,29 +1322,6 @@ setInterval(() => {
   }
   ngarkoCilesimetPrinter();
 })();
-
-// =========================================================
-//  LEXUESI I BARKODEVE (SKANERI USB)
-// =========================================================
-// Ky funksion dëgjon kur skaneri dërgon barkodin (dhe shtyp Enter automatikisht)
-document.getElementById('search-produkt').addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') {
-    e.preventDefault(); // Parandalo sjelljen e formës
-    const barkodi = this.value.trim();
-    if (!barkodi) return;
-
-    // Kërko produktin në listë
-    const produkti = state.produktet.find(p => p.barkodi === barkodi);
-    
-    if (produkti) {
-      shtoNeCart(produkti.id); // Shtoje në kupon
-      this.value = '';         // Pastro fushën e kërkimit
-      filtroProduktet();       // Kthe listën në normalitet
-    } else {
-      shfaqAlert('shitje-alert', '⚠️ Asnjë produkt nuk u gjet me këtë barkod!', 'warning');
-    }
-  }
-});
 </script>
 </body>
 </html>
