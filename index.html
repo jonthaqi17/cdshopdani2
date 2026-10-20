@@ -9,8 +9,7 @@
 <title>Biznesi — Sistemi i Plotë</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
-<!-- Shtojmë librarinë html5-qrcode për kamerën -->
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   :root {
@@ -264,12 +263,6 @@
   .produkt-btn b { display: block; margin-bottom: 4px; color: #333; }
   .produkt-btn .kat { color: #888; font-size: 0.75rem; }
   .produkt-btn .cmimi { color: var(--primary); font-weight: bold; float: right; }
-
-  /* KAMERA SCANNER */
-  #kamera-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-  #kamera-modal.active { display: flex; }
-  #reader { width: 100%; max-width: 500px; background: #000; border-radius: 12px; overflow: hidden; }
-  #reader button { background: var(--primary); color: #fff; border: none; padding: 10px; margin-top: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -326,11 +319,8 @@
             <option value="Mbremje (17:00-00:00)">Mbremje (17:00-00:00)</option>
           </select>
 
-          <label>Kërko / Skano produkt</label>
-          <div style="display:flex; gap:8px; margin-bottom:10px;">
-            <input type="text" class="search-produkt" id="search-produkt" placeholder="🔍 Shkruaj ose skano barkodin..." oninput="filtroProduktet()" style="margin-bottom:0;">
-            <button class="btn-primary" onclick="hapKameran()" style="white-space:nowrap; padding:0 15px;">📷 Kamera</button>
-          </div>
+          <label>Kërko produkt</label>
+          <input type="text" class="search-produkt" id="search-produkt" placeholder="🔍 Shkruaj emrin ose barkodin..." oninput="filtroProduktet()">
 
           <label>Kliko produktin për të shtuar në kupon:</label>
           <div class="produkt-list" id="produkt-list"></div>
@@ -354,7 +344,6 @@
             </div>
             <label>Shënim</label>
             <input type="text" id="cart-shenim" placeholder="opsional">
-            
             <div style="margin-top:12px; display:flex; gap:8px;">
               <button class="btn-success btn-lg" style="flex:2;" onclick="perfundoShitje()">✅ Përfundo & Printo</button>
               <button class="btn-danger btn-lg" style="flex:1;" onclick="pastroCart()">🗑️</button>
@@ -461,8 +450,8 @@
             <input type="number" id="produkt-stoku" value="0" min="0">
           </div>
           <div>
-            <label>Barkodi (Skano ose shkruaj)</label>
-            <input type="text" id="produkt-barkodi" placeholder="Kliko butonin 📷...">
+            <label>Barkodi (opsional)</label>
+            <input type="text" id="produkt-barkodi">
           </div>
           <div style="display:flex; gap:8px; align-items:end;">
             <button class="btn-primary" onclick="krijoProdukt()">💾 Ruaj</button>
@@ -535,7 +524,7 @@
         <div class="card">
           <h3>ℹ️ Info</h3>
           <p style="font-size:0.9rem; line-height:1.8;">
-            <b>Versioni:</b> 2.1<br>
+            <b>Versioni:</b> 2.0<br>
             <b>Server:</b> <span id="info-server">—</span><br>
             <b>PWA:</b> <span id="info-pwa">—</span><br>
             <b>Puntorë aktiv:</b> <span id="info-puntoret">0</span><br>
@@ -574,16 +563,10 @@
     <h2>🖨️ Kuponi u Regjistrua</h2>
     <div id="printer-area"></div>
     <div style="display:flex; gap:10px; margin-top:20px;" class="no-print">
-      <button class="btn-success" style="flex:1;" onclick="window.print()">🖨️ Printo</button>
+      <button class="btn-success" style="flex:1;" onclick="printKupon()">🖨️ Printo</button>
       <button class="btn-primary" style="flex:1;" onclick="mbyllModal('modal-kupon'); pastroCart();">✅ Shitje e Re</button>
     </div>
   </div>
-</div>
-
-<!-- ============ MODAL KAMERA ============ -->
-<div id="kamera-modal">
-  <div id="reader"></div>
-  <button onclick="mbyllKameran()" style="max-width:500px; margin-top:15px; background:var(--danger);">❌ Mbyll Kamerën</button>
 </div>
 
 <!-- PWA Banner -->
@@ -610,9 +593,6 @@ let state = {
   deferredPrompt: null,
   printerSettings: JSON.parse(localStorage.getItem('printerSettings') || '{}'),
 };
-
-let html5QrCode = null;
-let scannerAktiv = false;
 
 // ---------- HTTP HELPER ----------
 async function api(method, url, body) {
@@ -703,54 +683,6 @@ async function startApp() {
   document.getElementById('ditor-data').value = new Date().toISOString().split('T')[0];
   document.getElementById('mujor-muaji').value = new Date().toISOString().slice(0,7);
   document.getElementById('info-server').textContent = window.location.host;
-}
-
-// ---------- KAMERA SCANNER ----------
-function hapKameran() {
-  document.getElementById('kamera-modal').classList.add('active');
-  if (!html5QrCode) {
-    html5QrCode = new Html5Qrcode("reader");
-  }
-  
-  html5QrCode.start(
-    { facingMode: "environment" },
-    {
-      fps: 10,
-      qrbox: { width: 250, height: 250 }
-    },
-    (decodedText) => {
-      if (!scannerAktiv) return;
-      scannerAktiv = false; // Parandalo skanimin e shumëfishtë
-      
-      // Bip dhe vibro (opsionale)
-      document.getElementById('search-produkt').value = decodedText;
-      filtroProduktet();
-      
-      // Kontrollo nëse ekziston vetëm një produkt që përputhet me barkodin dhe shtoje
-      const p = state.produktet.find(x => x.barkodi === decodedText);
-      if (p) {
-        shtoNeCart(p.id);
-      }
-      
-      mbyllKameran();
-    },
-    (errorMessage) => {
-      // Gabimet e leximit (vazhdon të provojë)
-    }
-  ).catch(err => {
-    alert("Nuk mund të hapet kamera: " + err);
-    mbyllKameran();
-  });
-  scannerAktiv = true;
-}
-
-function mbyllKameran() {
-  document.getElementById('kamera-modal').classList.remove('active');
-  if (html5QrCode && html5QrCode.isScanning) {
-    html5QrCode.stop().then(() => {
-      scannerAktiv = false;
-    }).catch(err => console.log(err));
-  }
 }
 
 // ---------- PRODUKTET ----------
@@ -864,7 +796,7 @@ async function perfundoShitje() {
       artikuj: state.cart.map(x => ({ produkti_id: x.produkti_id, sasia: x.sasia, cmimi: x.cmimi })),
       ndrrimi, shenim, zbritje,
     });
-    
+    // Printo kuponin
     shfaqKuponin(res);
     state.cart = [];
     document.getElementById('cart-zbritje').value = 0;
@@ -920,6 +852,8 @@ function shfaqKuponin(res) {
   // Auto-print
   setTimeout(() => window.print(), 300);
 }
+
+function printKupon() { window.print(); }
 
 function testPrinter() {
   const s = state.printerSettings;
@@ -1387,16 +1321,23 @@ setInterval(() => {
   ngarkoCilesimetPrinter();
 })();
 
-// Kujtesë për skanimin me Lexues Barkodesh USB (që shkruan si tastierë)
+// =========================================================
+//  LEXUESI I BARKODEVE (SKANERI USB)
+// =========================================================
+// Ky funksion dëgjon kur skaneri dërgon barkodin (dhe shtyp Enter automatikisht)
 document.getElementById('search-produkt').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
-    e.preventDefault();
-    const code = this.value.trim();
-    const p = state.produktet.find(x => x.barkodi === code);
-    if (p) {
-      shtoNeCart(p.id);
-      this.value = ''; // Pastro fushën pas skanimit me sukses
-      filtroProduktet();
+    e.preventDefault(); // Parandalo sjelljen e formës
+    const barkodi = this.value.trim();
+    if (!barkodi) return;
+
+    // Kërko produktin në listë
+    const produkti = state.produktet.find(p => p.barkodi === barkodi);
+    
+    if (produkti) {
+      shtoNeCart(produkti.id); // Shtoje në kupon
+      this.value = '';         // Pastro fushën e kërkimit
+      filtroProduktet();       // Kthe listën në normalitet
     } else {
       shfaqAlert('shitje-alert', '⚠️ Asnjë produkt nuk u gjet me këtë barkod!', 'warning');
     }
