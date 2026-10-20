@@ -90,7 +90,7 @@ let scanner = null;
 let scannerActive = false;
 let currentPage = 'shitje';
 
-// ✅ E RE: Variabla për lexuesin e barkodeve USB/Bluetooth
+// Variabla për lexuesin e barkodeve USB/Bluetooth
 let lexuesInterval = null;
 window.lexuesAktiv = false;
 
@@ -132,7 +132,6 @@ async function logout() {
     scannerActive = false;
     scanner = null;
   }
-  // ✅ E RE: pastro lexuesin manual
   if (lexuesInterval) { clearInterval(lexuesInterval); lexuesInterval = null; }
   window.lexuesAktiv = false;
   await db.auth.signOut();
@@ -164,13 +163,11 @@ function buildNav() {
 
 function navigate(page) {
   currentPage = page;
-  // Ndalojmë skanimin nëse është aktiv
   if (scannerActive && scanner) {
     try { scanner.stop(); scanner.clear(); } catch(e){}
     scannerActive = false;
     scanner = null;
   }
-  // ✅ E RE: Ndalojmë lexuesin manual kur ndryshon faqja
   if (lexuesInterval) { clearInterval(lexuesInterval); lexuesInterval = null; }
   window.lexuesAktiv = false;
 
@@ -374,7 +371,7 @@ function renderShitje() {
     '<span id="shportaCount" class="badge bg-light text-dark">0 artikuj</span>' +
     '</div>' +
     '<div class="table-responsive"><table class="table mb-0 align-middle">' +
-    '<thead><tr><th>Produkti</th><th>Çmimi</th><th>Sasia</th><th>Totali</th><th></th></tr></thead>' +
+    '<thead><tr><th>Produkti</th><th>Çmimi (Kliko për të ndryshuar)</th><th>Sasia</th><th>Totali</th><th></th></tr></thead>' +
     '<tbody id="shportaBody"><tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr></tbody>' +
     '</table></div>' +
     '<div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">' +
@@ -392,7 +389,6 @@ function renderShitje() {
     }
   });
 
-  // ✅ E RE: klik kudo në faqen e shitjes rifokuso inputin nëse lexuesi është aktiv
   document.getElementById('mainContent').addEventListener('click', function(e) {
     if (window.lexuesAktiv && !e.target.closest('input, button, select, textarea, a')) {
       const el = document.getElementById('barkodiInput');
@@ -434,7 +430,6 @@ function renderSshporta() {
   const tb = document.getElementById('shportaBody');
   const countEl = document.getElementById('shportaCount');
 
-  // ✅ E RE: përditëso numëruesin e artikujve
   if (countEl) {
     const totalItems = SHporta.reduce((s,x) => s + x.sasia, 0);
     countEl.textContent = totalItems + ' artikuj';
@@ -445,17 +440,34 @@ function renderSshporta() {
     document.getElementById('totaliShitjes').textContent = '0.00 €';
     return;
   }
+  
+  // Këtu është pjesa ku mund të ndryshohet çmimi direkt
   tb.innerHTML = SHporta.map((it,i) =>
     '<tr><td>' + it.emri + '</td>' +
-    '<td>' + it.cmimi.toFixed(2) + ' €</td>' +
+    '<td><div class="input-group input-group-sm" style="width:110px">' +
+    '<input type="number" step="0.01" class="form-control form-control-sm text-end" value="' + it.cmimi.toFixed(2) + '" onchange="ndryshoCmimin(' + i + ', this.value)">' +
+    '<span class="input-group-text">€</span></div></td>' +
     '<td><button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(' + i + ',-1)">−</button>' +
     '<span class="mx-2">' + it.sasia + '</span>' +
     '<button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(' + i + ',1)">+</button></td>' +
     '<td><b>' + (it.cmimi*it.sasia).toFixed(2) + ' €</b></td>' +
     '<td><button class="btn btn-sm btn-danger" onclick="hiqNgaShporta(' + i + ')"><i class="bi bi-x"></i></button></td></tr>'
   ).join('');
+  
   const total = SHporta.reduce((s,x)=>s+x.cmimi*x.sasia, 0);
   document.getElementById('totaliShitjes').textContent = total.toFixed(2) + ' €';
+}
+
+// Funksioni i ri për ndryshimin e çmimit në shportë
+function ndryshoCmimin(index, cmimiRi) {
+  const cmimi = parseFloat(cmimiRi);
+  if (isNaN(cmimi) || cmimi < 0) {
+    alert('Ju lutem shkruani një çmim të vlefshëm!');
+    renderSshporta();
+    return;
+  }
+  SHporta[index].cmimi = cmimi;
+  renderSshporta();
 }
 
 function ndryshoSasi(i, delta) {
@@ -502,13 +514,12 @@ async function perfundoSshitjen() {
 }
 
 // =====================================================
-// SKANERI I KAMERËS - ME FIX (ndalon pas skanimit të parë)
+// SKANERI I KAMERËS
 // =====================================================
 async function toggleScanner() {
   const div = document.getElementById('reader');
   const txt = document.getElementById('scannerBtnTxt');
   
-  // Nëse skaneri është aktiv → ndaloje
   if (scannerActive && scanner) {
     try { await scanner.stop(); scanner.clear(); } catch(e){}
     scannerActive = false;
@@ -518,12 +529,10 @@ async function toggleScanner() {
     return;
   }
   
-  // Fillo skanimin
   div.classList.remove('hidden');
   txt.textContent = 'Ndalo skanimin';
   scanner = new Html5Qrcode("reader");
   
-  // Flamur për të parandaluar skanimin e dyfishtë
   let skanimPërfunduar = false;
   
   try {
@@ -531,14 +540,11 @@ async function toggleScanner() {
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 250, height: 150 } },
       async function(text) {
-        // Nëse kemi skanuar tashmë, injoro
         if (skanimPërfunduar) return;
         skanimPërfunduar = true;
         
-        // Dridhje feedback
         if (navigator.vibrate) navigator.vibrate(100);
         
-        // Ndalojmë skanimin menjëherë
         try { 
           await scanner.stop(); 
           scanner.clear(); 
@@ -548,7 +554,6 @@ async function toggleScanner() {
         txt.textContent = 'Skano me kamerë';
         scanner = null;
         
-        // Procesojmë barkodin
         document.getElementById('barkodiInput').value = text;
         await kerkoBarkod();
       }, 
@@ -564,7 +569,7 @@ async function toggleScanner() {
 }
 
 // =====================================================
-// ✅ E RE: LEXUESI I BARKODEVE (USB/Bluetooth - si tastierë)
+// LEXUESI I BARKODEVE (USB/Bluetooth)
 // =====================================================
 function toggleLexuesManual() {
   const status = document.getElementById('statusLexues');
@@ -572,19 +577,16 @@ function toggleLexuesManual() {
   const inp = document.getElementById('barkodiInput');
 
   if (window.lexuesAktiv) {
-    // Çaktivizo
     window.lexuesAktiv = false;
     if (lexuesInterval) { clearInterval(lexuesInterval); lexuesInterval = null; }
     if (status) status.classList.add('hidden');
     if (btnTxt) btnTxt.textContent = 'Aktivizo Lexues Barkodesh';
   } else {
-    // Aktivizo
     window.lexuesAktiv = true;
     if (status) status.classList.remove('hidden');
     if (btnTxt) btnTxt.textContent = 'Çaktivizo Lexues Barkodesh';
     if (inp) inp.focus();
 
-    // Rifokuso inputin çdo 1.5 sekonda nëse përdoruesi klikon diku tjetër
     lexuesInterval = setInterval(() => {
       if (window.lexuesAktiv && currentPage === 'shitje') {
         const el = document.getElementById('barkodiInput');
