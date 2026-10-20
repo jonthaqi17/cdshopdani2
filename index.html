@@ -90,6 +90,10 @@ let scanner = null;
 let scannerActive = false;
 let currentPage = 'shitje';
 
+// ✅ E RE: Variabla për lexuesin e barkodeve USB/Bluetooth
+let lexuesInterval = null;
+window.lexuesAktiv = false;
+
 // =====================================================
 // LOGIN / LOGOUT
 // =====================================================
@@ -128,6 +132,9 @@ async function logout() {
     scannerActive = false;
     scanner = null;
   }
+  // ✅ E RE: pastro lexuesin manual
+  if (lexuesInterval) { clearInterval(lexuesInterval); lexuesInterval = null; }
+  window.lexuesAktiv = false;
   await db.auth.signOut();
   USER = null;
   SHporta = [];
@@ -163,6 +170,10 @@ function navigate(page) {
     scannerActive = false;
     scanner = null;
   }
+  // ✅ E RE: Ndalojmë lexuesin manual kur ndryshon faqja
+  if (lexuesInterval) { clearInterval(lexuesInterval); lexuesInterval = null; }
+  window.lexuesAktiv = false;
+
   document.querySelectorAll('#navMenu a').forEach(a => a.classList.remove('active'));
   const el = document.getElementById('nav-' + page);
   if (el) el.classList.add('active');
@@ -338,16 +349,30 @@ function renderShitje() {
     '<h3 class="mb-3">🛒 Shitje</h3>' +
     '<div class="row g-3">' +
     '<div class="col-md-5"><div class="card p-3">' +
-    '<label class="fw-bold mb-2">Skano / Shkruaj barkodin:</label>' +
+    '<label class="fw-bold mb-2">📷 Skano / Shkruaj barkodin:</label>' +
     '<div class="input-group mb-2">' +
-    '<input id="barkodiInput" class="form-control form-control-lg" placeholder="Barkodi..." autocomplete="off">' +
+    '<input id="barkodiInput" class="form-control form-control-lg" placeholder="Barkodi ose skano me lexues..." autocomplete="off">' +
     '<button class="btn btn-primary" onclick="kerkoBarkod()"><i class="bi bi-search"></i></button></div>' +
-    '<button class="btn btn-outline-secondary w-100 mb-2" onclick="toggleScanner()">' +
+    '<div class="d-grid gap-2 mb-2">' +
+    '<button class="btn btn-outline-secondary" onclick="toggleScanner()">' +
     '<i class="bi bi-camera"></i> <span id="scannerBtnTxt">Skano me kamerë</span></button>' +
+    '<button class="btn btn-outline-info" onclick="toggleLexuesManual()">' +
+    '<i class="bi bi-upc-scan"></i> <span id="lexuesBtnTxt">Aktivizo Lexues Barkodesh</span></button>' +
+    '</div>' +
     '<div id="reader" class="hidden"></div>' +
-    '<div id="produktInfo" class="mt-2"></div></div></div>' +
+    '<div id="statusLexues" class="alert alert-secondary py-2 small mt-2 hidden">' +
+    '<i class="bi bi-broadcast"></i> Lexuesi i barkodeve është <b>aktiv</b> — skano tani!' +
+    '</div>' +
+    '<div id="produktInfo" class="mt-2"></div>' +
+    '<div class="mt-3 small text-muted">' +
+    '<i class="bi bi-info-circle"></i> Lexuesit USB/Bluetooth funksionojnë automatikisht kur kursori është në fushën e barkodit.' +
+    '</div>' +
+    '</div></div>' +
     '<div class="col-md-7"><div class="card">' +
-    '<div class="card-header bg-dark text-white">Shporta</div>' +
+    '<div class="card-header bg-dark text-white d-flex justify-content-between">' +
+    '<span>Shporta</span>' +
+    '<span id="shportaCount" class="badge bg-light text-dark">0 artikuj</span>' +
+    '</div>' +
     '<div class="table-responsive"><table class="table mb-0 align-middle">' +
     '<thead><tr><th>Produkti</th><th>Çmimi</th><th>Sasia</th><th>Totali</th><th></th></tr></thead>' +
     '<tbody id="shportaBody"><tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr></tbody>' +
@@ -357,9 +382,23 @@ function renderShitje() {
     '<button class="btn btn-success btn-lg" id="btnPerfundo" onclick="perfundoSshitjen()">' +
     '<i class="bi bi-check-circle"></i> Përfundo</button>' +
     '</div></div></div></div>';
+
   const inp = document.getElementById('barkodiInput');
   inp.focus();
-  inp.addEventListener('keypress', function(e) { if (e.key === 'Enter') { e.preventDefault(); kerkoBarkod(); } });
+  inp.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      kerkoBarkod();
+    }
+  });
+
+  // ✅ E RE: klik kudo në faqen e shitjes rifokuso inputin nëse lexuesi është aktiv
+  document.getElementById('mainContent').addEventListener('click', function(e) {
+    if (window.lexuesAktiv && !e.target.closest('input, button, select, textarea, a')) {
+      const el = document.getElementById('barkodiInput');
+      if (el) el.focus();
+    }
+  });
 }
 
 async function kerkoBarkod() {
@@ -393,6 +432,14 @@ function shtoNeshport(p) {
 
 function renderSshporta() {
   const tb = document.getElementById('shportaBody');
+  const countEl = document.getElementById('shportaCount');
+
+  // ✅ E RE: përditëso numëruesin e artikujve
+  if (countEl) {
+    const totalItems = SHporta.reduce((s,x) => s + x.sasia, 0);
+    countEl.textContent = totalItems + ' artikuj';
+  }
+
   if (!SHporta.length) {
     tb.innerHTML = '<tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr>';
     document.getElementById('totaliShitjes').textContent = '0.00 €';
@@ -513,6 +560,40 @@ async function toggleScanner() {
     div.classList.add('hidden');
     txt.textContent = 'Skano me kamerë';
     scanner = null;
+  }
+}
+
+// =====================================================
+// ✅ E RE: LEXUESI I BARKODEVE (USB/Bluetooth - si tastierë)
+// =====================================================
+function toggleLexuesManual() {
+  const status = document.getElementById('statusLexues');
+  const btnTxt = document.getElementById('lexuesBtnTxt');
+  const inp = document.getElementById('barkodiInput');
+
+  if (window.lexuesAktiv) {
+    // Çaktivizo
+    window.lexuesAktiv = false;
+    if (lexuesInterval) { clearInterval(lexuesInterval); lexuesInterval = null; }
+    if (status) status.classList.add('hidden');
+    if (btnTxt) btnTxt.textContent = 'Aktivizo Lexues Barkodesh';
+  } else {
+    // Aktivizo
+    window.lexuesAktiv = true;
+    if (status) status.classList.remove('hidden');
+    if (btnTxt) btnTxt.textContent = 'Çaktivizo Lexues Barkodesh';
+    if (inp) inp.focus();
+
+    // Rifokuso inputin çdo 1.5 sekonda nëse përdoruesi klikon diku tjetër
+    lexuesInterval = setInterval(() => {
+      if (window.lexuesAktiv && currentPage === 'shitje') {
+        const el = document.getElementById('barkodiInput');
+        if (el && document.activeElement !== el && 
+            !document.activeElement.matches('input, textarea, select, button, a')) {
+          el.focus();
+        }
+      }
+    }, 1500);
   }
 }
 
