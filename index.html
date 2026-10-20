@@ -441,7 +441,6 @@ function renderSshporta() {
     return;
   }
   
-  // Këtu është pjesa ku mund të ndryshohet çmimi direkt
   tb.innerHTML = SHporta.map((it,i) =>
     '<tr><td>' + it.emri + '</td>' +
     '<td><div class="input-group input-group-sm" style="width:110px">' +
@@ -458,7 +457,6 @@ function renderSshporta() {
   document.getElementById('totaliShitjes').textContent = total.toFixed(2) + ' €';
 }
 
-// Funksioni i ri për ndryshimin e çmimit në shportë
 function ndryshoCmimin(index, cmimiRi) {
   const cmimi = parseFloat(cmimiRi);
   if (isNaN(cmimi) || cmimi < 0) {
@@ -672,6 +670,8 @@ async function ngarkoRaportet() {
   });
   const { data: mujore } = await db.from('raport_mujor').select('*').limit(12);
   const totali = (shitjet||[]).reduce((s,x)=>s+Number(x.totali), 0);
+  
+  // E re: Butoni "Fshij" u shtua në tabelën e detajeve
   rb.innerHTML = '<div class="card p-3 mb-3"><h5>💰 Totali për periudhën: <span class="text-success">' + totali.toFixed(2) + ' €</span> (' + (shitjet?.length||0) + ' shitje)</h5></div>' +
     '<div class="row g-3 mb-3">' +
     '<div class="col-md-6"><div class="card p-3"><h5>👤 Raport sipas punëtorit</h5>' +
@@ -687,9 +687,47 @@ async function ngarkoRaportet() {
     ((mujore||[]).map(m => '<tr><td>'+m.muaji+'</td><td>'+m.nr_shitjesh+'</td><td><b>'+Number(m.totali).toFixed(2)+'</b></td></tr>').join('') || '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>') +
     '</tbody></table></div>' +
     '<div class="card p-3"><h5>🧾 Detajet e shitjeve</h5><div class="table-responsive">' +
-    '<table class="table table-sm mb-0"><thead><tr><th>Data</th><th>Produkti</th><th>Punëtori</th><th>Sasia</th><th>Totali</th></tr></thead><tbody>' +
-    ((shitjet||[]).map(s => '<tr><td>'+new Date(s.krijuar_me).toLocaleString('sq-AL')+'</td><td>'+s.emri_produktit+'</td><td>'+s.punetor_emri+'</td><td>'+s.sasia+'</td><td><b>'+Number(s.totali).toFixed(2)+' €</b></td></tr>').join('') || '<tr><td colspan="5" class="text-muted">Nuk ka shitje</td></tr>') +
+    '<table class="table table-sm mb-0 align-middle"><thead><tr><th>Data</th><th>Produkti</th><th>Punëtori</th><th>Sasia</th><th>Totali</th><th>Veprim</th></tr></thead><tbody>' +
+    ((shitjet||[]).map(s => 
+      '<tr><td>'+new Date(s.krijuar_me).toLocaleString('sq-AL')+'</td>' +
+      '<td>'+s.emri_produktit+'</td>' +
+      '<td>'+s.punetor_emri+'</td>' +
+      '<td>'+s.sasia+'</td>' +
+      '<td><b>'+Number(s.totali).toFixed(2)+' €</b></td>' +
+      // Ketu eshte butoni i fshirjes
+      '<td><button class="btn btn-sm btn-outline-danger" onclick="fshiShitjen('+s.id+', '+s.produkt_id+', '+s.sasia+')" title="Fshij shitjen"><i class="bi bi-trash"></i></button></td></tr>'
+    ).join('') || '<tr><td colspan="6" class="text-muted">Nuk ka shitje</td></tr>') +
     '</tbody></table></div></div>';
+}
+
+// Funksioni i ri per te fshire nje shitje dhe per te kthyer stokun
+async function fshiShitjen(shitjeId, produktId, sasia) {
+  if (!confirm('A jeni i sigurt që dëshironi të fshini këtë shitje? Stoku i produktit do të rritet përsëri.')) return;
+  
+  try {
+    // 1. Marrim stokun aktual te produktit
+    const { data: prod, error: errProd } = await db.from('produktet').select('sasia').eq('id', produktId).single();
+    if (errProd) throw new Error('Gabim gjatë leximit të stokut: ' + errProd.message);
+    
+    // 2. Kthejme stokun
+    if (prod) {
+      const stokuRi = Number(prod.sasia) + Number(sasia);
+      const { error: errUpd } = await db.from('produktet').update({ sasia: stokuRi }).eq('id', produktId);
+      if (errUpd) throw new Error('Gabim gjatë kthimit të stokut: ' + errUpd.message);
+    }
+    
+    // 3. Fshijme shitjen nga tabela
+    const { error: errDel } = await db.from('shitjet').delete().eq('id', shitjeId);
+    if (errDel) throw new Error('Gabim gjatë fshirjes së shitjes: ' + errDel.message);
+    
+    alert('✅ Shitja u fshi me sukses dhe stoku u kthye!');
+    
+    // Rifreskojmë raportet
+    ngarkoRaportet();
+    
+  } catch (e) {
+    alert('❌ ' + e.message);
+  }
 }
 
 // =====================================================
