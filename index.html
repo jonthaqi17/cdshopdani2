@@ -2,653 +2,1405 @@
 <html lang="sq">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Sistemi i Dyqanit</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#667eea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Biznesi — Sistemi i Plotë</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<!-- Shtojmë librarinë html5-qrcode për kamerën -->
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <style>
-body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; }
-.login-wrap { max-width:420px; margin:60px auto; }
-.sidebar { background:#0f172a; color:#fff; min-height:100vh; padding:0; }
-.sidebar .brand { padding:18px; border-bottom:1px solid #1e293b; }
-.sidebar a { color:#cbd5e1; display:block; padding:12px 20px; text-decoration:none; font-size:15px; }
-.sidebar a:hover, .sidebar a.active { background:#1e293b; color:#fff; border-left:4px solid #3b82f6; }
-.stat { border-radius:14px; padding:20px; color:#fff; }
-.bg-blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8);}
-.bg-green{background:linear-gradient(135deg,#10b981,#059669);}
-.bg-orange{background:linear-gradient(135deg,#f59e0b,#d97706);}
-.bg-purple{background:linear-gradient(135deg,#8b5cf6,#6d28d9);}
-.card { border-radius:12px; border:none; box-shadow:0 2px 10px rgba(0,0,0,.06); }
-.prod-card { border-radius:12px; transition:.2s; cursor:pointer; }
-.prod-card:hover { transform:translateY(-4px); box-shadow:0 10px 20px rgba(0,0,0,.15); }
-.prod-foto { width:100%; height:140px; object-fit:cover; border-radius:10px; background:#e2e8f0; }
-.thumb { width:56px; height:56px; object-fit:cover; border-radius:8px; background:#e2e8f0; }
-#reader video { border-radius:12px; }
-.hidden { display:none !important; }
-@media (max-width:768px){ .sidebar { min-height:auto; } }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --primary: #667eea;
+    --primary-dark: #4c5fd5;
+    --secondary: #764ba2;
+    --success: #28a745;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --gray: #6c757d;
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --text: #333;
+    --border: #e0e4eb;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    color: var(--text);
+    font-size: 15px;
+  }
+  input, select, button, textarea { font-family: inherit; font-size: 15px; }
+
+  /* LOGIN */
+  #login-screen {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #764ba2 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; padding: 20px;
+  }
+  .login-box {
+    background: #fff; border-radius: 18px; padding: 35px 30px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 25px 70px rgba(0,0,0,0.4);
+    animation: slideUp 0.4s;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .login-box h1 {
+    text-align: center; color: var(--primary); margin-bottom: 5px;
+    font-size: 1.6rem;
+  }
+  .login-box p { text-align: center; color: #666; margin-bottom: 25px; font-size: 0.9rem; }
+  .login-box label { display: block; margin: 15px 0 6px; font-weight: 600; font-size: 0.9rem; color: #444; }
+  .login-box input {
+    width: 100%; padding: 13px 15px; border: 2px solid var(--border);
+    border-radius: 10px; font-size: 1rem; transition: 0.2s;
+  }
+  .login-box input:focus { outline: none; border-color: var(--primary); }
+  .login-box button {
+    width: 100%; padding: 14px; margin-top: 20px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white; border: none; border-radius: 10px;
+    font-size: 1.05rem; font-weight: 600; cursor: pointer;
+  }
+  .login-box button:disabled { opacity: 0.5; }
+
+  /* LAYOUT */
+  .app-header {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white; padding: 12px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  .app-header h1 { font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+  .user-info { font-size: 0.85rem; text-align: right; }
+  .user-info b { display: block; }
+  .btn-logout {
+    background: rgba(255,255,255,0.25); color: white; border: none;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+    margin-left: 10px;
+  }
+
+  .tabs {
+    display: flex; background: #fff; overflow-x: auto;
+    border-bottom: 1px solid var(--border); position: sticky; top: 56px; z-index: 99;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0; padding: 14px 20px; cursor: pointer;
+    background: none; border: none; font-weight: 600; color: #888;
+    border-bottom: 3px solid transparent; white-space: nowrap;
+    font-size: 0.9rem;
+  }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .content { padding: 15px; max-width: 1400px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--card); border-radius: 12px;
+    padding: 18px; margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .card h3 {
+    font-size: 1rem; margin-bottom: 15px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary); color: #333;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+
+  label { display: block; margin: 12px 0 6px; font-weight: 600; font-size: 0.85rem; color: #555; }
+  input, select, textarea {
+    width: 100%; padding: 11px 13px; border: 2px solid var(--border);
+    border-radius: 8px; transition: 0.2s; background: #fff;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--primary); }
+
+  button {
+    padding: 11px 18px; border: none; border-radius: 8px;
+    font-weight: 600; cursor: pointer; transition: 0.15s;
+  }
+  button:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-warning { background: var(--warning); color: #333; }
+  .btn-secondary { background: var(--gray); color: white; }
+  .btn-block { width: 100%; }
+  .btn-lg { padding: 15px 25px; font-size: 1.05rem; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: var(--primary); color: white; font-weight: 600; }
+  tr:hover { background: #f8fafd; }
+  .table-wrap { max-height: 480px; overflow: auto; border-radius: 8px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; margin-bottom: 15px; }
+  .stat-card {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white; padding: 18px; border-radius: 12px; text-align: center;
+  }
+  .stat-card.green { background: linear-gradient(135deg, #11998e, #38ef7d); }
+  .stat-card.orange { background: linear-gradient(135deg, #f2994a, #f2c94c); }
+  .stat-card.red { background: linear-gradient(135deg, #eb3349, #f45c43); }
+  .stat-card .value { font-size: 1.6rem; font-weight: bold; margin: 4px 0; }
+  .stat-card .label { font-size: 0.8rem; opacity: 0.95; }
+
+  .alert { padding: 12px 15px; border-radius: 8px; margin: 10px 0; font-weight: 500; }
+  .alert-success { background: #d4edda; color: #155724; }
+  .alert-danger { background: #f8d7da; color: #721c24; }
+  .alert-warning { background: #fff3cd; color: #856404; }
+  .alert-info { background: #d1ecf1; color: #0c5460; }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 0.78rem; font-weight: 600;
+  }
+  .badge-blue { background: #cfe2ff; color: #084298; }
+  .badge-green { background: #d1e7dd; color: #0a3622; }
+  .badge-orange { background: #ffe5b4; color: #8a4b08; }
+  .badge-red { background: #f8d7da; color: #721c24; }
+
+  .header-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: end; }
+
+  /* CART */
+  .cart-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px; border-bottom: 1px solid var(--border); gap: 10px;
+  }
+  .cart-item .name { flex: 1; font-weight: 600; font-size: 0.9rem; }
+  .cart-item .price { color: var(--primary); font-weight: bold; }
+  .cart-item .qty-controls { display: flex; gap: 5px; align-items: center; }
+  .qty-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--primary); color: white; border: none;
+    font-weight: bold; cursor: pointer; padding: 0;
+  }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal {
+    background: white; border-radius: 15px; padding: 25px;
+    max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto;
+    animation: slideUp 0.3s;
+  }
+  .modal h2 { margin-bottom: 15px; color: var(--primary); }
+
+  /* PRINTER */
+  @media print {
+    body * { visibility: hidden; }
+    #printer-area, #printer-area * { visibility: visible; }
+    #printer-area {
+      position: absolute; left: 0; top: 0; width: 80mm;
+      font-family: 'Courier New', monospace;
+    }
+    .no-print { display: none !important; }
+  }
+
+  .kupon {
+    width: 80mm; font-family: 'Courier New', monospace;
+    font-size: 12px; padding: 5mm;
+    background: white; color: black; margin: 0 auto;
+  }
+  .kupon-58 { width: 58mm; }
+  .kupon h2 { text-align: center; margin: 5px 0; font-size: 14px; }
+  .kupon hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+  .kupon .line { display: flex; justify-content: space-between; }
+  .kupon .total { font-size: 15px; font-weight: bold; }
+  .kupon .center { text-align: center; }
+
+  /* PWA install banner */
+  #pwa-banner {
+    position: fixed; bottom: 15px; left: 15px; right: 15px;
+    background: white; padding: 12px 15px; border-radius: 10px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+    display: none; z-index: 500;
+    align-items: center; gap: 10px;
+  }
+  #pwa-banner.active { display: flex; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .content { padding: 10px; }
+    .card { padding: 14px; }
+    .stat-card .value { font-size: 1.3rem; }
+    .tab { padding: 12px 14px; font-size: 0.82rem; }
+  }
+
+  .loading { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .search-produkt {
+    padding: 12px 15px; border: 2px solid var(--border); border-radius: 10px;
+    width: 100%; font-size: 1rem; margin-bottom: 10px;
+  }
+  .produkt-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px; max-height: 280px; overflow-y: auto;
+    padding: 4px;
+  }
+  .produkt-btn {
+    padding: 12px 10px; background: #f8f9fb; border: 2px solid var(--border);
+    border-radius: 8px; text-align: left; cursor: pointer; font-size: 0.85rem;
+    transition: 0.15s;
+  }
+  .produkt-btn:hover { border-color: var(--primary); background: #eef2ff; }
+  .produkt-btn b { display: block; margin-bottom: 4px; color: #333; }
+  .produkt-btn .kat { color: #888; font-size: 0.75rem; }
+  .produkt-btn .cmimi { color: var(--primary); font-weight: bold; float: right; }
+
+  /* KAMERA SCANNER */
+  #kamera-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  #kamera-modal.active { display: flex; }
+  #reader { width: 100%; max-width: 500px; background: #000; border-radius: 12px; overflow: hidden; }
+  #reader button { background: var(--primary); color: #fff; border: none; padding: 10px; margin-top: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
 </style>
 </head>
 <body>
 
-<!-- ============ LOGIN ============ -->
-<div id="loginView" class="login-wrap">
-  <div class="card p-4">
-    <h3 class="text-center mb-4">🏪 Sistemi i Dyqanit</h3>
-    <div class="mb-3">
-      <label class="form-label">Email</label>
-      <input id="loginEmail" type="email" class="form-control form-control-lg" placeholder="admin@dyqani.com">
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Fjalëkalimi</label>
-      <input id="loginPass" type="password" class="form-control form-control-lg">
-    </div>
-    <button class="btn btn-primary btn-lg w-100" onclick="login()">Kyçu</button>
-    <div id="loginMsg" class="text-danger mt-2 text-center"></div>
+<!-- ================= LOGIN ================= -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>🏪 Biznesi</h1>
+    <p>Futuni për të vazhduar</p>
+    <label>Username</label>
+    <input type="text" id="login-username" autocomplete="username" placeholder="p.sh. admin">
+    <label>Password</label>
+    <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••">
+    <button id="login-btn" onclick="login()">🔓 Hyr</button>
+    <div id="login-error" style="margin-top:10px;"></div>
+    <p style="margin-top:20px; font-size:0.78rem; color:#888;">
+      Default: <b>admin / admin123</b> · <b>puntor1 / puntor123</b>
+    </p>
   </div>
 </div>
 
-<!-- ============ APP ============ -->
-<div id="appView" class="hidden">
-<div class="container-fluid">
-<div class="row">
-  <div class="col-md-2 sidebar">
-    <div class="brand">
-      <h5 class="mb-0">🏪 Dyqani</h5>
-      <small class="text-secondary" id="userInfo"></small>
+<!-- ================= APP ================= -->
+<div id="app" style="display:none;">
+  <header class="app-header">
+    <h1>🏪 Biznesi</h1>
+    <div style="display:flex; align-items:center;">
+      <div class="user-info">
+        <b id="user-name">—</b>
+        <span id="user-roli" style="opacity:0.85; font-size:0.78rem;">—</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Dil</button>
     </div>
-    <nav id="navMenu"></nav>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="shitje">🛒 Shitje</button>
+    <button class="tab" data-tab="ditor">📅 Ditor</button>
+    <button class="tab" data-tab="mujor">📊 Mujor</button>
+    <button class="tab" data-tab="stok">📦 Stoku</button>
+    <button class="tab" data-tab="produkte">⚙️ Produkte</button>
+    <button class="tab" data-tab="cilesimet" id="tab-cilesimet">⚙️ Cilësimet</button>
   </div>
-  <div class="col-md-10 p-4" id="mainContent"></div>
-</div>
-</div>
+
+  <div class="content">
+
+    <!-- SHITJE -->
+    <div class="panel active" id="panel-shitje">
+      <div class="grid">
+        <div class="card">
+          <h3>🛒 Shitje e Re</h3>
+          <label>Ndrrimi</label>
+          <select id="shitje-ndrrimi">
+            <option value="Paradite (09:00-17:00)">Paradite (09:00-17:00)</option>
+            <option value="Mbremje (17:00-00:00)">Mbremje (17:00-00:00)</option>
+          </select>
+
+          <label>Kërko / Skano produkt</label>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input type="text" class="search-produkt" id="search-produkt" placeholder="🔍 Shkruaj ose skano barkodin..." oninput="filtroProduktet()" style="margin-bottom:0;">
+            <button class="btn-primary" onclick="hapKameran()" style="white-space:nowrap; padding:0 15px;">📷 Kamera</button>
+          </div>
+
+          <label>Kliko produktin për të shtuar në kupon:</label>
+          <div class="produkt-list" id="produkt-list"></div>
+        </div>
+
+        <div class="card">
+          <h3>🧾 Kuponi Aktual</h3>
+          <div id="cart-items" style="min-height:100px; max-height:280px; overflow-y:auto;">
+            <p style="color:#888; text-align:center; padding:30px 0;">Nuk ka artikuj. Kliko një produkt.</p>
+          </div>
+          <div style="margin-top:15px; padding-top:15px; border-top:2px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+              <span>Nëntotali:</span><b id="cart-nentotali">0.00 €</b>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span>Zbritje (€):</span>
+              <input type="number" id="cart-zbritje" value="0" min="0" step="0.01" style="width:100px;" onchange="rifreskoCart()">
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:1.2rem;">
+              <b>TOTALI:</b><b style="color:var(--primary);" id="cart-totali">0.00 €</b>
+            </div>
+            <label>Shënim</label>
+            <input type="text" id="cart-shenim" placeholder="opsional">
+            
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <button class="btn-success btn-lg" style="flex:2;" onclick="perfundoShitje()">✅ Përfundo & Printo</button>
+              <button class="btn-danger btn-lg" style="flex:1;" onclick="pastroCart()">🗑️</button>
+            </div>
+            <button class="btn-secondary btn-block" style="margin-top:8px;" onclick="ruajSiDraft()">💾 Ruaj si Draft</button>
+          </div>
+          <div id="shitje-alert"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:15px;">
+        <h3>🕐 Shitjet e Sotme (<span id="live-count">0</span>)</h3>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+          <b>Total: <span id="live-total" style="color:var(--primary);">0.00 €</span></b>
+          <button class="btn-secondary" onclick="rifreskoLive()" style="padding:6px 12px; font-size:0.8rem;">🔄 Rifresko</button>
+        </div>
+        <div class="table-wrap" style="max-height:300px;">
+          <table>
+            <thead><tr><th>Ora</th><th>Puntori</th><th>Produkti</th><th>Sasia</th><th>Total</th><th>Kupon</th></tr></thead>
+            <tbody id="live-shitjet"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RAPORT DITOR -->
+    <div class="panel" id="panel-ditor">
+      <div class="card">
+        <div class="header-actions">
+          <div>
+            <label style="margin:0;">Data</label>
+            <input type="date" id="ditor-data" style="width:200px;">
+          </div>
+          <button class="btn-primary" onclick="shfaqRaportDitor()">🔍 Shfaq</button>
+          <button class="btn-success" onclick="eksportoCSV('ditor')">📥 CSV</button>
+          <button class="btn-warning" onclick="window.print()">🖨️ Printo</button>
+        </div>
+      </div>
+      <div id="raport-ditor-content"></div>
+    </div>
+
+    <!-- RAPORT MUJOR -->
+    <div class="panel" id="panel-mujor">
+      <div class="card">
+        <div class="header-actions">
+          <div>
+            <label style="margin:0;">Muaji</label>
+            <input type="month" id="mujor-muaji" style="width:200px;">
+          </div>
+          <button class="btn-primary" onclick="shfaqRaportMujor()">🔍 Shfaq</button>
+          <button class="btn-success" onclick="eksportoCSV('mujor')">📥 CSV</button>
+          <button class="btn-warning" onclick="window.print()">🖨️ Printo</button>
+        </div>
+      </div>
+      <div id="raport-mujor-content"></div>
+    </div>
+
+    <!-- STOKU -->
+    <div class="panel" id="panel-stok">
+      <div class="card">
+        <div class="header-actions">
+          <button class="btn-secondary" onclick="rifreskoStok()">🔄 Rifresko</button>
+          <button class="btn-warning" onclick="shfaqStokUlet()">⚠️ Stok i Ulët</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Emri</th><th>Kategoria</th><th>Çmimi</th><th>Stoku</th><th>Vlera</th><th>Statusi</th><th>Veprime</th></tr>
+            </thead>
+            <tbody id="stok-tabela"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUKTET -->
+    <div class="panel" id="panel-produkte">
+      <div class="card">
+        <h3>➕ Shto / Edito Produkt</h3>
+        <input type="hidden" id="produkt-id">
+        <div class="grid">
+          <div>
+            <label>Emri</label>
+            <input type="text" id="produkt-emri" placeholder="p.sh. USB 32GB">
+          </div>
+          <div>
+            <label>Kategoria</label>
+            <select id="produkt-kategoria">
+              <option>USB</option><option>SD Card</option>
+              <option>Çanta Meshkuj</option><option>Headphones</option>
+              <option>Tastiera</option><option>Zmadhues Zëri</option>
+              <option>Adapter</option><option>Shërbim - Mbushje USB</option>
+              <option>Tjera</option>
+            </select>
+          </div>
+          <div>
+            <label>Çmimi (€)</label>
+            <input type="number" id="produkt-cmimi" step="0.01" min="0">
+          </div>
+          <div>
+            <label>Stoku</label>
+            <input type="number" id="produkt-stoku" value="0" min="0">
+          </div>
+          <div>
+            <label>Barkodi (Skano ose shkruaj)</label>
+            <input type="text" id="produkt-barkodi" placeholder="Kliko butonin 📷...">
+          </div>
+          <div style="display:flex; gap:8px; align-items:end;">
+            <button class="btn-primary" onclick="krijoProdukt()">💾 Ruaj</button>
+            <button class="btn-secondary" onclick="pastroFormenProdukt()">🔄</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Emri</th><th>Kategoria</th><th>Çmimi</th><th>Stoku</th><th>Veprime</th></tr></thead>
+            <tbody id="produkte-tabela"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CILESIMET -->
+    <div class="panel" id="panel-cilesimet">
+      <div class="grid">
+        <div class="card" id="card-puntoret">
+          <h3>👥 Puntorët</h3>
+          <div id="puntoret-lista"></div>
+          <div id="form-puntor" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border); display:none;">
+            <h4 style="margin-bottom:10px;">Shto Puntor të Ri</h4>
+            <label>Emri</label>
+            <input type="text" id="puntor-emri">
+            <label>Username</label>
+            <input type="text" id="puntor-username">
+            <label>Password</label>
+            <input type="password" id="puntor-password">
+            <label>Roli</label>
+            <select id="puntor-roli">
+              <option value="puntor">Puntor</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button class="btn-primary" style="margin-top:10px;" onclick="shtoPuntor()">➕ Shto</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🖨️ Printer Termik</h3>
+          <label>Madhësia e kuponit</label>
+          <select id="printer-madhësia">
+            <option value="80">80mm (standard)</option>
+            <option value="58">58mm (i vogël)</option>
+          </select>
+          <label>Emri i biznesit (shfaqet në kupon)</label>
+          <input type="text" id="printer-biznesi" value="Dyqani Im">
+          <label>Adresa</label>
+          <input type="text" id="printer-adresa" value="Rr. Kryesore, Nr. 1">
+          <label>Telefoni</label>
+          <input type="text" id="printer-telefoni" value="+383 44 000 000">
+          <label>Footer</label>
+          <input type="text" id="printer-footer" value="Faleminderit! Ju presim përsëri!">
+          <button class="btn-success" style="margin-top:12px;" onclick="ruajCilesimetPrinter()">💾 Ruaj</button>
+          <button class="btn-primary" style="margin-top:8px;" onclick="testPrinter()">🖨️ Test Printo</button>
+        </div>
+
+        <div class="card" id="card-backup" style="display:none;">
+          <h3>💾 Backup & Menaxhim</h3>
+          <p style="color:#666; font-size:0.85rem; margin-bottom:12px;">
+            Serveri ruan të dhënat në SQLite. Bëj backup periodik!
+          </p>
+          <button class="btn-success btn-block" onclick="backup()">📤 Shkarko Backup (JSON)</button>
+          <hr style="margin:15px 0;">
+          <button class="btn-danger btn-block" onclick="fshiTeDhenat()">🗑️ Fshi Shitjet e Vjetra</button>
+        </div>
+
+        <div class="card">
+          <h3>ℹ️ Info</h3>
+          <p style="font-size:0.9rem; line-height:1.8;">
+            <b>Versioni:</b> 2.1<br>
+            <b>Server:</b> <span id="info-server">—</span><br>
+            <b>PWA:</b> <span id="info-pwa">—</span><br>
+            <b>Puntorë aktiv:</b> <span id="info-puntoret">0</span><br>
+            <b>Produkte:</b> <span id="info-produktet">0</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- MODAL -->
-<div class="modal fade" id="modal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content" id="modalContent"></div>
+<!-- ============ MODAL EDIT PUNTOR ============ -->
+<div class="modal-backdrop" id="modal-puntor">
+  <div class="modal">
+    <h2>Edito Puntorin</h2>
+    <input type="hidden" id="edit-puntor-id">
+    <label>Emri</label>
+    <input type="text" id="edit-puntor-emri">
+    <label>Password i re (lëre bosh për të mos ndryshuar)</label>
+    <input type="password" id="edit-puntor-password">
+    <label>Roli</label>
+    <select id="edit-puntor-roli">
+      <option value="puntor">Puntor</option>
+      <option value="admin">Admin</option>
+    </select>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn-primary" style="flex:1;" onclick="ruajEditPuntor()">💾 Ruaj</button>
+      <button class="btn-secondary" style="flex:1;" onclick="mbyllModal('modal-puntor')">Anulo</button>
+    </div>
   </div>
+</div>
+
+<!-- ============ MODAL KUPON ============ -->
+<div class="modal-backdrop" id="modal-kupon">
+  <div class="modal" style="max-width:400px;">
+    <h2>🖨️ Kuponi u Regjistrua</h2>
+    <div id="printer-area"></div>
+    <div style="display:flex; gap:10px; margin-top:20px;" class="no-print">
+      <button class="btn-success" style="flex:1;" onclick="window.print()">🖨️ Printo</button>
+      <button class="btn-primary" style="flex:1;" onclick="mbyllModal('modal-kupon'); pastroCart();">✅ Shitje e Re</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL KAMERA ============ -->
+<div id="kamera-modal">
+  <div id="reader"></div>
+  <button onclick="mbyllKameran()" style="max-width:500px; margin-top:15px; background:var(--danger);">❌ Mbyll Kamerën</button>
+</div>
+
+<!-- PWA Banner -->
+<div id="pwa-banner">
+  <div style="flex:1;">
+    <b>📱 Instalo app</b>
+    <div style="font-size:0.8rem; color:#666;">Shtoje në ekran kryesor</div>
+  </div>
+  <button class="btn-primary" onclick="instaloPWA()">Instalo</button>
+  <button class="btn-secondary" onclick="document.getElementById('pwa-banner').classList.remove('active')" style="padding:6px 10px;">✕</button>
 </div>
 
 <script>
-// =====================================================
-// KONFIGURIMI
-// =====================================================
-const SUPABASE_URL = 'https://rhkaqtpfhcyajyslnvln.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa2FxdHBmaGN5YWp5c2xudmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3Mzc1OTQsImV4cCI6MjA5MDMxMzU5NH0.oaObjuascv482VGXD7p-loOZY048mt1LbwJlWcZyCSE';
+// =========================================================
+//  APP LOGIC
+// =========================================================
+const API = window.location.origin + '/api';
+let state = {
+  token: localStorage.getItem('token'),
+  user: null,
+  cart: [],
+  produktet: [],
+  puntoret: [],
+  deferredPrompt: null,
+  printerSettings: JSON.parse(localStorage.getItem('printerSettings') || '{}'),
+};
 
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+let html5QrCode = null;
+let scannerAktiv = false;
 
-let USER = null;
-let SHporta = [];
-let scanner = null;
-let scannerActive = false;
-let currentPage = 'shitje';
+// ---------- HTTP HELPER ----------
+async function api(method, url, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  };
+  if (state.token) opts.headers['Authorization'] = 'Bearer ' + state.token;
+  const res = await fetch(API + url, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Gabim serveri');
+  return data;
+}
 
-// =====================================================
-// LOGIN / LOGOUT
-// =====================================================
+// ---------- LOGIN ----------
 async function login() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  document.getElementById('loginMsg').textContent = '';
-  const { error } = await db.auth.signInWithPassword({ email, password: pass });
-  if (error) {
-    document.getElementById('loginMsg').textContent = '❌ ' + error.message;
-    return;
-  }
-  await loadUser();
-}
-
-async function loadUser() {
-  const { data: { user } } = await db.auth.getUser();
-  if (!user) return showLogin();
-  const { data: prof, error } = await db.from('profiles').select('*').eq('id', user.id).single();
-  if (error || !prof) {
-    alert('Nuk u gjet profili për këtë përdorues. Kontakto adminin!');
-    await db.auth.signOut();
-    return showLogin();
-  }
-  USER = { id: user.id, email: user.email, emri: prof.emri || user.email, roli: prof.roli || 'punetor' };
-  document.getElementById('loginView').classList.add('hidden');
-  document.getElementById('appView').classList.remove('hidden');
-  document.getElementById('userInfo').textContent = USER.emri + ' (' + USER.roli + ')';
-  buildNav();
-  navigate(USER.roli === 'admin' ? 'dashboard' : 'shitje');
-}
-
-async function logout() {
-  if (scannerActive) {
-    try { await scanner.stop(); scanner.clear(); } catch(e){}
-    scannerActive = false;
-    scanner = null;
-  }
-  await db.auth.signOut();
-  USER = null;
-  SHporta = [];
-  showLogin();
-}
-
-function showLogin() {
-  document.getElementById('appView').classList.add('hidden');
-  document.getElementById('loginView').classList.remove('hidden');
-}
-
-// =====================================================
-// NAVIGIMI
-// =====================================================
-function buildNav() {
-  const adminLinks = '<a href="#" onclick="navigate(\'dashboard\');return false" id="nav-dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>' +
-    '<a href="#" onclick="navigate(\'produktet\');return false" id="nav-produktet"><i class="bi bi-box-seam"></i> Produktet</a>' +
-    '<a href="#" onclick="navigate(\'stok\');return false" id="nav-stok"><i class="bi bi-clipboard-data"></i> Stoku</a>' +
-    '<a href="barkodet.html" target="_blank"><i class="bi bi-upc-scan"></i> Barkodet</a>' +
-    '<a href="#" onclick="navigate(\'raporte\');return false" id="nav-raporte"><i class="bi bi-bar-chart"></i> Raporte</a>' +
-    '<a href="#" onclick="navigate(\'perdoruesit\');return false" id="nav-perdoruesit"><i class="bi bi-people"></i> Përdoruesit</a>';
-  const workerLinks = '<a href="#" onclick="navigate(\'shitje\');return false" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>';
-  document.getElementById('navMenu').innerHTML =
-    (USER.roli === 'admin' ? adminLinks : workerLinks) +
-    '<a href="#" onclick="logout();return false" class="text-danger"><i class="bi bi-box-arrow-right"></i> Dil</a>';
-}
-
-function navigate(page) {
-  currentPage = page;
-  // Ndalojmë skanimin nëse është aktiv
-  if (scannerActive && scanner) {
-    try { scanner.stop(); scanner.clear(); } catch(e){}
-    scannerActive = false;
-    scanner = null;
-  }
-  document.querySelectorAll('#navMenu a').forEach(a => a.classList.remove('active'));
-  const el = document.getElementById('nav-' + page);
-  if (el) el.classList.add('active');
-  if (page === 'shitje') renderShitje();
-  if (page === 'dashboard' && USER.roli === 'admin') renderDashboard();
-  if (page === 'produktet' && USER.roli === 'admin') renderProduktet();
-  if (page === 'stok' && USER.roli === 'admin') renderStok();
-  if (page === 'raporte' && USER.roli === 'admin') renderRaporte();
-  if (page === 'perdoruesit' && USER.roli === 'admin') renderPerdoruesit();
-}
-
-// =====================================================
-// DASHBOARD
-// =====================================================
-async function renderDashboard() {
-  const mc = document.getElementById('mainContent');
-  mc.innerHTML = '<p>Duke u ngarkuar...</p>';
-  const sot = new Date().toISOString().slice(0,10);
-  const { count: cProd } = await db.from('produktet').select('*', { count:'exact', head:true });
-  const { data: stokData } = await db.from('produktet').select('sasia');
-  const totalStok = (stokData||[]).reduce((s,p)=>s+Number(p.sasia), 0);
-  const { data: shitjetSot } = await db.from('shitjet').select('totali').gte('krijuar_me', sot + 'T00:00:00');
-  const totalSot = (shitjetSot||[]).reduce((s,x)=>s+Number(x.totali), 0);
-  const { data: stokPak } = await db.from('produktet').select('*').lt('sasia',5).order('sasia').limit(10);
-
-  mc.innerHTML = '<h3 class="mb-4">📊 Dashboard</h3>' +
-    '<div class="row g-3 mb-4">' +
-    '<div class="col-md-4"><div class="stat bg-blue"><h6>Produkte</h6><h2>' + (cProd||0) + '</h2></div></div>' +
-    '<div class="col-md-4"><div class="stat bg-green"><h6>Copë në stok</h6><h2>' + totalStok + '</h2></div></div>' +
-    '<div class="col-md-4"><div class="stat bg-orange"><h6>Shitje sot</h6><h2>' + totalSot.toFixed(2) + ' €</h2></div></div>' +
-    '</div>' +
-    '<div class="card p-3"><h5>⚠️ Produkte me stok të ulët (&lt; 5)</h5>' +
-    ((stokPak&&stokPak.length) ?
-      '<table class="table table-sm mb-0"><thead><tr><th>Emri</th><th>Barkodi</th><th>Sasia</th></tr></thead><tbody>' +
-      stokPak.map(p=>'<tr><td>'+p.emri+'</td><td><code>'+p.barkodi+'</code></td><td><span class="badge bg-danger">'+p.sasia+'</span></td></tr>').join('') +
-      '</tbody></table>' : '<p class="text-muted">Të gjitha produktet kanë stok të mjaftueshëm ✅</p>') +
-    '</div>';
-}
-
-// =====================================================
-// PRODUKTET
-// =====================================================
-async function renderProduktet() {
-  const mc = document.getElementById('mainContent');
-  mc.innerHTML = '<div class="d-flex justify-content-between mb-3 flex-wrap gap-2">' +
-    '<h3>📦 Produktet</h3>' +
-    '<div><button class="btn btn-outline-primary me-2" onclick="window.open(\'barkodet.html\', \'_blank\')"><i class="bi bi-upc-scan"></i> Barkodet</button>' +
-    '<button class="btn btn-primary" onclick="formProdukt()"><i class="bi bi-plus-lg"></i> Shto Produkt</button></div></div>' +
-    '<div class="input-group mb-3"><input id="searchProd" class="form-control" placeholder="Kërko sipas emrit, barkodit, kategorisë..." oninput="loadProduktet()"></div>' +
-    '<div class="row g-3" id="prodGrid"></div>';
-  loadProduktet();
-}
-
-async function loadProduktet() {
-  const grid = document.getElementById('prodGrid');
-  if (!grid) return;
-  const q = document.getElementById('searchProd')?.value.trim() || '';
-  let query = db.from('produktet').select('*').order('emri');
-  if (q) query = query.or('emri.ilike.%' + q + '%,barkodi.ilike.%' + q + '%,kategoria.ilike.%' + q + '%');
-  const { data, error } = await query;
-  if (error) { grid.innerHTML = '<div class="alert alert-danger">' + error.message + '</div>'; return; }
-  if (!data || !data.length) { grid.innerHTML = '<p class="text-muted">Nuk ka produkte.</p>'; return; }
-  grid.innerHTML = data.map(p =>
-    '<div class="col-md-4 col-lg-3"><div class="card prod-card p-2">' +
-    (p.foto_url ? '<img src="' + p.foto_url + '" class="prod-foto mb-2">' :
-      '<div class="prod-foto mb-2 d-flex align-items-center justify-content-center"><i class="bi bi-image fs-1 text-muted"></i></div>') +
-    '<b>' + p.emri + '</b>' +
-    '<small class="text-muted">' + (p.kategoria||'-') + ' • <code>' + p.barkodi + '</code></small>' +
-    '<div class="d-flex justify-content-between mt-2 align-items-center">' +
-    '<span class="fw-bold text-success">' + Number(p.cmimi_shitjes).toFixed(2) + ' €</span>' +
-    '<span class="badge ' + (p.sasia<5?'bg-danger':'bg-success') + '">Stok: ' + p.sasia + '</span></div>' +
-    '<div class="mt-2 d-flex gap-1">' +
-    '<button class="btn btn-sm btn-outline-primary flex-fill" onclick="printoBarkodin(' + p.id + ')" title="Printo barkodin"><i class="bi bi-printer"></i></button>' +
-    '<button class="btn btn-sm btn-warning flex-fill" onclick=\'formProdukt(' + JSON.stringify(p).replace(/'/g,"&#39;") + ')\'><i class="bi bi-pencil"></i></button>' +
-    '<button class="btn btn-sm btn-danger flex-fill" onclick="fshiProdukt(' + p.id + ')"><i class="bi bi-trash"></i></button>' +
-    '</div></div></div>').join('');
-}
-
-function printoBarkodin(id) {
-  window.open('barkodet.html?print=' + id, '_blank');
-}
-
-function formProdukt(p) {
-  const edit = !!p;
-  const ktg = ['CD','USB','SD Card','Zmadhues Zëri','Aksesor','Adapter','Kabllo Telefoni','Çanta','Tjetër'];
-  document.getElementById('modalContent').innerHTML =
-    '<div class="modal-header"><h5>' + (edit?'Edito':'Shto') + ' Produkt</h5>' +
-    '<button class="btn-close" data-bs-dismiss="modal"></button></div>' +
-    '<div class="modal-body"><div class="row g-3">' +
-    '<div class="col-md-6"><label class="form-label">Barkodi (SKU)*</label>' +
-    '<input id="f_barkodi" class="form-control" value="' + (p?p.barkodi:'') + '" ' + (edit?'readonly':'') + '></div>' +
-    '<div class="col-md-6"><label class="form-label">Emri*</label>' +
-    '<input id="f_emri" class="form-control" value="' + (p?p.emri:'') + '"></div>' +
-    '<div class="col-md-6"><label class="form-label">Kategoria</label>' +
-    '<select id="f_kategoria" class="form-select">' +
-    ktg.map(k => '<option ' + (p&&p.kategoria===k?'selected':'') + '>' + k + '</option>').join('') +
-    '</select></div>' +
-    '<div class="col-md-3"><label class="form-label">Blerje (€)</label>' +
-    '<input id="f_blerjes" type="number" step="0.01" class="form-control" value="' + (p?p.cmimi_blerjes:0) + '"></div>' +
-    '<div class="col-md-3"><label class="form-label">Shitje (€)*</label>' +
-    '<input id="f_shitjes" type="number" step="0.01" class="form-control" value="' + (p?p.cmimi_shitjes:'') + '"></div>' +
-    '<div class="col-md-4"><label class="form-label">Sasia*</label>' +
-    '<input id="f_sasia" type="number" class="form-control" value="' + (p?p.sasia:0) + '"></div>' +
-    '<div class="col-md-8"><label class="form-label">Foto</label>' +
-    '<input id="f_foto" type="file" accept="image/*" class="form-control"></div>' +
-    '</div></div>' +
-    '<div class="modal-footer">' +
-    '<button class="btn btn-secondary" data-bs-dismiss="modal">Anulo</button>' +
-    '<button class="btn btn-success" id="btnRuajProdukt">💾 Ruaj</button></div>';
-  const modalEl = document.getElementById('modal');
-  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-  modal.show();
-  document.getElementById('btnRuajProdukt').onclick = function() { ruajProdukt(p ? p.id : null); };
-}
-
-async function ruajProdukt(id) {
-  const barkodi = document.getElementById('f_barkodi').value.trim();
-  const emri = document.getElementById('f_emri').value.trim();
-  const kategoria = document.getElementById('f_kategoria').value;
-  const cmimi_blerjes = parseFloat(document.getElementById('f_blerjes').value||0);
-  const cmimi_shitjes = parseFloat(document.getElementById('f_shitjes').value);
-  const sasia = parseInt(document.getElementById('f_sasia').value||0);
-  if (!barkodi || !emri || isNaN(cmimi_shitjes)) return alert('Plotëso fushat e detyrueshme!');
-  const btn = document.getElementById('btnRuajProdukt');
-  btn.disabled = true;
-  btn.textContent = '⏳ Duke ruajtur...';
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  err.innerHTML = '';
+  if (!username || !password) { err.innerHTML = '<div class="alert alert-danger">Plotëso të gjitha</div>'; return; }
+  btn.disabled = true; btn.innerHTML = '<span class="loading"></span> Duke hyrë...';
   try {
-    let foto_url = null;
-    const fileInput = document.getElementById('f_foto');
-    if (fileInput.files[0]) {
-      const file = fileInput.files[0];
-      const ext = file.name.split('.').pop();
-      const fn = barkodi + '_' + Date.now() + '.' + ext;
-      const { error: upErr } = await db.storage.from('produktet').upload(fn, file);
-      if (upErr) throw new Error('Gabim foto: ' + upErr.message);
-      const { data: urlData } = db.storage.from('produktet').getPublicUrl(fn);
-      foto_url = urlData.publicUrl;
-    }
-    const payload = { barkodi, emri, kategoria, cmimi_blerjes, cmimi_shitjes, sasia };
-    if (foto_url) payload.foto_url = foto_url;
-    let err;
-    if (id) {
-      const res = await db.from('produktet').update(payload).eq('id', id);
-      err = res.error;
-    } else {
-      const res = await db.from('produktet').insert(payload);
-      err = res.error;
-    }
-    if (err) throw new Error(err.message);
-    bootstrap.Modal.getInstance(document.getElementById('modal')).hide();
-    loadProduktet();
-    alert('✅ Produkti u ruajt me sukses!');
-  } catch (e) {
-    alert('Gabim: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '💾 Ruaj';
+    const res = await fetch(API + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    state.token = data.token;
+    state.user = data.user;
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    startApp();
+  } catch(e) {
+    err.innerHTML = '<div class="alert alert-danger">' + e.message + '</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔓 Hyr';
+  }
+}
+document.getElementById('login-password').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+
+async function verifikoToken() {
+  if (!state.token) return false;
+  try {
+    const res = await api('GET', '/me');
+    state.user = res.user;
+    return true;
+  } catch { 
+    state.token = null; localStorage.removeItem('token'); 
+    return false; 
   }
 }
 
-async function fshiProdukt(id) {
-  if (!confirm('Fshij produktin?')) return;
-  const { error } = await db.from('produktet').delete().eq('id', id);
-  if (error) return alert(error.message);
-  loadProduktet();
+function logout() {
+  if (!confirm('Dëshironi të dilni?')) return;
+  state.token = null; state.user = null;
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
 }
 
-// =====================================================
-// SHITJE
-// =====================================================
-function renderShitje() {
-  SHporta = [];
-  document.getElementById('mainContent').innerHTML =
-    '<h3 class="mb-3">🛒 Shitje</h3>' +
-    '<div class="row g-3">' +
-    '<div class="col-md-5"><div class="card p-3">' +
-    '<label class="fw-bold mb-2">Skano / Shkruaj barkodin:</label>' +
-    '<div class="input-group mb-2">' +
-    '<input id="barkodiInput" class="form-control form-control-lg" placeholder="Barkodi..." autocomplete="off">' +
-    '<button class="btn btn-primary" onclick="kerkoBarkod()"><i class="bi bi-search"></i></button></div>' +
-    '<button class="btn btn-outline-secondary w-100 mb-2" onclick="toggleScanner()">' +
-    '<i class="bi bi-camera"></i> <span id="scannerBtnTxt">Skano me kamerë</span></button>' +
-    '<div id="reader" class="hidden"></div>' +
-    '<div id="produktInfo" class="mt-2"></div></div></div>' +
-    '<div class="col-md-7"><div class="card">' +
-    '<div class="card-header bg-dark text-white">Shporta</div>' +
-    '<div class="table-responsive"><table class="table mb-0 align-middle">' +
-    '<thead><tr><th>Produkti</th><th>Çmimi</th><th>Sasia</th><th>Totali</th><th></th></tr></thead>' +
-    '<tbody id="shportaBody"><tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr></tbody>' +
-    '</table></div>' +
-    '<div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">' +
-    '<h4 class="mb-0">Totali: <span id="totaliShitjes" class="text-success">0.00 €</span></h4>' +
-    '<button class="btn btn-success btn-lg" id="btnPerfundo" onclick="perfundoSshitjen()">' +
-    '<i class="bi bi-check-circle"></i> Përfundo</button>' +
-    '</div></div></div></div>';
-  const inp = document.getElementById('barkodiInput');
-  inp.focus();
-  inp.addEventListener('keypress', function(e) { if (e.key === 'Enter') { e.preventDefault(); kerkoBarkod(); } });
+// ---------- START APP ----------
+async function startApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-name').textContent = state.user.emri;
+  document.getElementById('user-roli').textContent = state.user.roli === 'admin' ? '👑 Admin' : '👤 Puntor';
+
+  // Fsheh cilësimet për puntorët
+  if (state.user.roli !== 'admin') {
+    document.getElementById('card-puntoret').style.display = 'none';
+    document.getElementById('card-backup').style.display = 'none';
+    document.getElementById('form-puntor').style.display = 'none';
+  } else {
+    document.getElementById('form-puntor').style.display = 'block';
+    document.getElementById('card-backup').style.display = 'block';
+  }
+
+  await Promise.all([ngarkoProduktet(), ngarkoPuntoret()]);
+  await rifreskoLive();
+  document.getElementById('ditor-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('mujor-muaji').value = new Date().toISOString().slice(0,7);
+  document.getElementById('info-server').textContent = window.location.host;
 }
 
-async function kerkoBarkod() {
-  const inp = document.getElementById('barkodiInput');
-  const barkodi = inp.value.trim();
-  if (!barkodi) return;
-  const { data, error } = await db.from('produktet').select('*').eq('barkodi', barkodi).maybeSingle();
-  if (error || !data) {
-    document.getElementById('produktInfo').innerHTML = '<div class="alert alert-danger">❌ Produkti nuk u gjet!</div>';
+// ---------- KAMERA SCANNER ----------
+function hapKameran() {
+  document.getElementById('kamera-modal').classList.add('active');
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader");
+  }
+  
+  html5QrCode.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: { width: 250, height: 250 }
+    },
+    (decodedText) => {
+      if (!scannerAktiv) return;
+      scannerAktiv = false; // Parandalo skanimin e shumëfishtë
+      
+      // Bip dhe vibro (opsionale)
+      document.getElementById('search-produkt').value = decodedText;
+      filtroProduktet();
+      
+      // Kontrollo nëse ekziston vetëm një produkt që përputhet me barkodin dhe shtoje
+      const p = state.produktet.find(x => x.barkodi === decodedText);
+      if (p) {
+        shtoNeCart(p.id);
+      }
+      
+      mbyllKameran();
+    },
+    (errorMessage) => {
+      // Gabimet e leximit (vazhdon të provojë)
+    }
+  ).catch(err => {
+    alert("Nuk mund të hapet kamera: " + err);
+    mbyllKameran();
+  });
+  scannerAktiv = true;
+}
+
+function mbyllKameran() {
+  document.getElementById('kamera-modal').classList.remove('active');
+  if (html5QrCode && html5QrCode.isScanning) {
+    html5QrCode.stop().then(() => {
+      scannerAktiv = false;
+    }).catch(err => console.log(err));
+  }
+}
+
+// ---------- PRODUKTET ----------
+async function ngarkoProduktet() {
+  try {
+    state.produktet = await api('GET', '/produktet');
+    filtroProduktet();
+    renderProdukteTabela();
+    renderStokTabela();
+    document.getElementById('info-produktet').textContent = state.produktet.length;
+  } catch(e) { console.error(e); }
+}
+
+function filtroProduktet() {
+  const q = document.getElementById('search-produkt').value.toLowerCase();
+  const lista = document.getElementById('produkt-list');
+  const filtruar = state.produktet.filter(p => 
+    p.emri.toLowerCase().includes(q) || (p.barkodi && p.barkodi.includes(q))
+  );
+  lista.innerHTML = '';
+  if (!filtruar.length) {
+    lista.innerHTML = '<p style="color:#888; padding:20px; text-align:center;">Nuk u gjet asnjë produkt</p>';
     return;
   }
-  document.getElementById('produktInfo').innerHTML =
-    '<div class="alert alert-success"><b>' + data.emri + '</b><br>' +
-    'Çmimi: ' + Number(data.cmimi_shitjes).toFixed(2) + ' € • Stok: ' + data.sasia + '</div>';
-  shtoNeshport(data);
-  inp.value = '';
-  inp.focus();
+  filtruar.forEach(p => {
+    lista.innerHTML += `
+      <button class="produkt-btn" onclick="shtoNeCart(${p.id})">
+        <span class="cmimi">${p.cmimi.toFixed(2)}€</span>
+        <b>${p.emri}</b>
+        <span class="kat">${p.kategoria} · Stok: ${p.kategoria === 'Shërbim - Mbushje USB' ? '∞' : p.stoku}</span>
+      </button>
+    `;
+  });
 }
 
-function shtoNeshport(p) {
-  const ekziston = SHporta.find(x => x.id === p.id);
+function shtoNeCart(id) {
+  const p = state.produktet.find(x => x.id === id);
+  if (!p) return;
+  if (p.kategoria !== 'Shërbim - Mbushje USB' && p.stoku < 1) {
+    shfaqAlert('shitje-alert', '⚠️ ' + p.emri + ' nuk ka stok!', 'danger');
+    return;
+  }
+  const ekziston = state.cart.find(x => x.produkti_id === id);
   if (ekziston) {
-    if (ekziston.sasia >= p.sasia) return alert('Nuk ka stok të mjaftueshëm!');
     ekziston.sasia++;
   } else {
-    if (p.sasia < 1) return alert('Produkti nuk ka stok!');
-    SHporta.push({ id:p.id, emri:p.emri, cmimi:Number(p.cmimi_shitjes), sasia:1, stoku_max:p.sasia });
+    state.cart.push({ produkti_id: p.id, emri: p.emri, kategoria: p.kategoria, cmimi: p.cmimi, sasia: 1 });
   }
-  renderSshporta();
+  rifreskoCart();
 }
 
-function renderSshporta() {
-  const tb = document.getElementById('shportaBody');
-  if (!SHporta.length) {
-    tb.innerHTML = '<tr><td colspan="5" class="text-muted text-center">Shporta bosh</td></tr>';
-    document.getElementById('totaliShitjes').textContent = '0.00 €';
-    return;
-  }
-  tb.innerHTML = SHporta.map((it,i) =>
-    '<tr><td>' + it.emri + '</td>' +
-    '<td>' + it.cmimi.toFixed(2) + ' €</td>' +
-    '<td><button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(' + i + ',-1)">−</button>' +
-    '<span class="mx-2">' + it.sasia + '</span>' +
-    '<button class="btn btn-sm btn-outline-secondary" onclick="ndryshoSasi(' + i + ',1)">+</button></td>' +
-    '<td><b>' + (it.cmimi*it.sasia).toFixed(2) + ' €</b></td>' +
-    '<td><button class="btn btn-sm btn-danger" onclick="hiqNgaShporta(' + i + ')"><i class="bi bi-x"></i></button></td></tr>'
-  ).join('');
-  const total = SHporta.reduce((s,x)=>s+x.cmimi*x.sasia, 0);
-  document.getElementById('totaliShitjes').textContent = total.toFixed(2) + ' €';
+function ndryshoSasi(id, delta) {
+  const item = state.cart.find(x => x.produkti_id === id);
+  if (!item) return;
+  item.sasia += delta;
+  if (item.sasia <= 0) state.cart = state.cart.filter(x => x.produkti_id !== id);
+  rifreskoCart();
 }
 
-function ndryshoSasi(i, delta) {
-  SHporta[i].sasia += delta;
-  if (SHporta[i].sasia < 1) SHporta.splice(i,1);
-  else if (SHporta[i].sasia > SHporta[i].stoku_max) {
-    SHporta[i].sasia = SHporta[i].stoku_max;
-    alert('Nuk ka stok të mjaftueshëm!');
-  }
-  renderSshporta();
+function fshiNgaCart(id) {
+  state.cart = state.cart.filter(x => x.produkti_id !== id);
+  rifreskoCart();
 }
 
-function hiqNgaShporta(i) { SHporta.splice(i,1); renderSshporta(); }
+function rifreskoCart() {
+  const c = document.getElementById('cart-items');
+  if (!state.cart.length) {
+    c.innerHTML = '<p style="color:#888; text-align:center; padding:30px 0;">Nuk ka artikuj. Kliko një produkt.</p>';
+  } else {
+    c.innerHTML = state.cart.map(item => `
+      <div class="cart-item">
+        <div class="name">${item.emri}<br><small style="color:#888; font-weight:normal;">${item.cmimi.toFixed(2)} €</small></div>
+        <div class="qty-controls">
+          <button class="qty-btn" onclick="ndryshoSasi(${item.produkti_id},-1)">−</button>
+          <b style="min-width:25px; text-align:center;">${item.sasia}</b>
+          <button class="qty-btn" onclick="ndryshoSasi(${item.produkti_id},1)">+</button>
+        </div>
+        <div class="price" style="min-width:70px; text-align:right;">${(item.sasia*item.cmimi).toFixed(2)} €</div>
+        <button class="btn-danger" style="padding:5px 10px;" onclick="fshiNgaCart(${item.produkti_id})">✕</button>
+      </div>
+    `).join('');
+  }
+  const nentotali = state.cart.reduce((s, x) => s + x.sasia * x.cmimi, 0);
+  const zbritje = parseFloat(document.getElementById('cart-zbritje').value) || 0;
+  document.getElementById('cart-nentotali').textContent = nentotali.toFixed(2) + ' €';
+  document.getElementById('cart-totali').textContent = (nentotali - zbritje).toFixed(2) + ' €';
+}
 
-async function perfundoSshitjen() {
-  if (!SHporta.length) return alert('Shporta është bosh!');
-  if (!confirm('Konfirmo shitjen?')) return;
-  const btn = document.getElementById('btnPerfundo');
-  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Duke ruajtur...'; }
+function pastroCart() {
+  if (state.cart.length && !confirm('Fshi të gjithë artikujt?')) return;
+  state.cart = [];
+  document.getElementById('cart-zbritje').value = 0;
+  document.getElementById('cart-shenim').value = '';
+  rifreskoCart();
+}
+
+function ruajSiDraft() {
+  localStorage.setItem('cartDraft', JSON.stringify(state.cart));
+  shfaqAlert('shitje-alert', '💾 Draft u ruajt', 'success');
+}
+
+// ---------- SHITJE ----------
+async function perfundoShitje() {
+  if (!state.cart.length) { shfaqAlert('shitje-alert', 'Kuponi është bosh!', 'danger'); return; }
+  const ndrrimi = document.getElementById('shitje-ndrrimi').value;
+  const shenim = document.getElementById('cart-shenim').value;
+  const zbritje = parseFloat(document.getElementById('cart-zbritje').value) || 0;
+
   try {
-    for (const it of SHporta) {
-      const { data: prod, error: errRead } = await db.from('produktet').select('sasia, emri').eq('id', it.id).single();
-      if (errRead) throw new Error('Lexim: ' + errRead.message);
-      if (!prod) throw new Error('Produkti nuk u gjet!');
-      if (prod.sasia < it.sasia) throw new Error('Stok i pamjaftueshëm!');
-      const stokuRi = prod.sasia - it.sasia;
-      const { data: upd, error: errUpd } = await db.from('produktet').update({ sasia: stokuRi }).eq('id', it.id).select();
-      if (errUpd) throw new Error('Update: ' + errUpd.message);
-      if (!upd || upd.length === 0) throw new Error('Update ktheu bosh!');
-      const { error: errIns } = await db.from('shitjet').insert({
-        produkt_id: it.id, emri_produktit: it.emri, sasia: it.sasia,
-        cmimi_njesi: it.cmimi, totali: it.cmimi * it.sasia,
-        punetor_id: USER.id, punetor_emri: USER.emri
-      });
-      if (errIns) throw new Error('Shitje: ' + errIns.message);
+    const res = await api('POST', '/shitjet', {
+      artikuj: state.cart.map(x => ({ produkti_id: x.produkti_id, sasia: x.sasia, cmimi: x.cmimi })),
+      ndrrimi, shenim, zbritje,
+    });
+    
+    shfaqKuponin(res);
+    state.cart = [];
+    document.getElementById('cart-zbritje').value = 0;
+    document.getElementById('cart-shenim').value = '';
+    rifreskoCart();
+    await ngarkoProduktet();
+    await rifreskoLive();
+  } catch(e) {
+    shfaqAlert('shitje-alert', '❌ ' + e.message, 'danger');
+  }
+}
+
+function shfaqKuponin(res) {
+  const s = state.printerSettings;
+  const emriBiznesit = s.biznesi || 'Dyqani Im';
+  const adresa = s.adresa || '';
+  const telefoni = s.telefoni || '';
+  const footer = s.footer || 'Faleminderit!';
+  const madh = s.madhësia || '80';
+  const klase = madh === '58' ? 'kupon kupon-58' : 'kupon';
+
+  let html = `
+    <div class="${klase}">
+      <h2>${emriBiznesit}</h2>
+      ${adresa ? `<div class="center">${adresa}</div>` : ''}
+      ${telefoni ? `<div class="center">Tel: ${telefoni}</div>` : ''}
+      <hr>
+      <div class="line"><span>Kuponi:</span><b>${res.kuponNr}</b></div>
+      <div class="line"><span>Data:</span><span>${res.data} ${res.ora}</span></div>
+      <div class="line"><span>Puntori:</span><span>${res.puntori_emri}</span></div>
+      <div class="line"><span>Ndrrimi:</span><span>${res.ndrrimi.split(' ')[0]}</span></div>
+      <hr>
+  `;
+  res.detajet.forEach(d => {
+    html += `
+      <div><b>${d.produkti_emri}</b></div>
+      <div class="line"><span>${d.sasia} x ${d.cmimi.toFixed(2)}€</span><span>${d.totali.toFixed(2)}€</span></div>
+    `;
+  });
+  html += `<hr>`;
+  if (res.zbritje > 0) {
+    html += `<div class="line"><span>Zbritje:</span><span>-${res.zbritje.toFixed(2)}€</span></div>`;
+  }
+  html += `
+      <div class="line total"><span>TOTALI:</span><span>${res.totaliPergjithshem.toFixed(2)} €</span></div>
+      <hr>
+      <div class="center">${footer}</div>
+      <div class="center" style="margin-top:8px; font-size:10px;">${new Date().toLocaleString('sq-AL')}</div>
+    </div>
+  `;
+  document.getElementById('printer-area').innerHTML = html;
+  document.getElementById('modal-kupon').classList.add('active');
+  // Auto-print
+  setTimeout(() => window.print(), 300);
+}
+
+function testPrinter() {
+  const s = state.printerSettings;
+  const klase = s.madhësia === '58' ? 'kupon kupon-58' : 'kupon';
+  document.getElementById('printer-area').innerHTML = `
+    <div class="${klase}">
+      <h2>${s.biznesi || 'Dyqani Im'}</h2>
+      <div class="center">${s.adresa || ''}</div>
+      <div class="center">Tel: ${s.telefoni || ''}</div>
+      <hr>
+      <div class="center"><b>*** TEST PRINT ***</b></div>
+      <div class="center">Printeri punon saktë!</div>
+      <hr>
+      <div class="center">${s.footer || ''}</div>
+      <div class="center" style="margin-top:8px; font-size:10px;">${new Date().toLocaleString('sq-AL')}</div>
+    </div>
+  `;
+  window.print();
+}
+
+function ruajCilesimetPrinter() {
+  state.printerSettings = {
+    madhësia: document.getElementById('printer-madhësia').value,
+    biznesi: document.getElementById('printer-biznesi').value,
+    adresa: document.getElementById('printer-adresa').value,
+    telefoni: document.getElementById('printer-telefoni').value,
+    footer: document.getElementById('printer-footer').value,
+  };
+  localStorage.setItem('printerSettings', JSON.stringify(state.printerSettings));
+  alert('✅ Cilësimet u ruajtën');
+}
+
+function ngarkoCilesimetPrinter() {
+  const s = state.printerSettings;
+  if (s.madhësia) document.getElementById('printer-madhësia').value = s.madhësia;
+  if (s.biznesi) document.getElementById('printer-biznesi').value = s.biznesi;
+  if (s.adresa) document.getElementById('printer-adresa').value = s.adresa;
+  if (s.telefoni) document.getElementById('printer-telefoni').value = s.telefoni;
+  if (s.footer) document.getElementById('printer-footer').value = s.footer;
+}
+
+// ---------- LIVE ----------
+async function rifreskoLive() {
+  try {
+    const rows = await api('GET', '/shitjet/sot');
+    const tbody = document.getElementById('live-shitjet');
+    let totali = 0;
+    tbody.innerHTML = rows.map(r => {
+      totali += r.totali;
+      return `<tr>
+        <td>${r.ora}</td><td>${r.puntori_emri}</td><td>${r.produkti_emri}</td>
+        <td>${r.sasia}</td><td><b>${r.totali.toFixed(2)} €</b></td>
+        <td><small>${r.kupon_nr || '-'}</small></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('live-total').textContent = totali.toFixed(2) + ' €';
+    document.getElementById('live-count').textContent = rows.length;
+  } catch(e) { console.error(e); }
+}
+
+// ---------- PUNTORET ----------
+async function ngarkoPuntoret() {
+  try {
+    state.puntoret = await api('GET', '/puntoret');
+    const lista = document.getElementById('puntoret-lista');
+    lista.innerHTML = state.puntoret.map(p => `
+      <div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <b>${p.emri}</b> ${p.roli === 'admin' ? '<span class="badge badge-blue">👑 Admin</span>' : '<span class="badge badge-green">Puntor</span>'}
+          <br><small style="color:#888;">@${p.username} ${p.aktiv ? '' : '· ❌ Joaktiv'}</small>
+        </div>
+        ${state.user.roli === 'admin' ? `
+          <div>
+            <button class="btn-warning" style="padding:5px 10px; font-size:0.8rem;" onclick="hapEditPuntor(${p.id})">✏️</button>
+            <button class="btn-danger" style="padding:5px 10px; font-size:0.8rem;" onclick="fshiPuntorin(${p.id})">🗑️</button>
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+    document.getElementById('info-puntoret').textContent = state.puntoret.filter(p => p.aktiv).length;
+  } catch(e) { console.error(e); }
+}
+
+async function shtoPuntor() {
+  const emri = document.getElementById('puntor-emri').value.trim();
+  const username = document.getElementById('puntor-username').value.trim();
+  const password = document.getElementById('puntor-password').value;
+  const roli = document.getElementById('puntor-roli').value;
+  if (!emri || !username || !password) { alert('Plotëso të gjitha'); return; }
+  try {
+    await api('POST', '/puntoret', { emri, username, password, roli });
+    alert('✅ Puntori u shtua');
+    document.getElementById('puntor-emri').value = '';
+    document.getElementById('puntor-username').value = '';
+    document.getElementById('puntor-password').value = '';
+    await ngarkoPuntoret();
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
+function hapEditPuntor(id) {
+  const p = state.puntoret.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('edit-puntor-id').value = p.id;
+  document.getElementById('edit-puntor-emri').value = p.emri;
+  document.getElementById('edit-puntor-password').value = '';
+  document.getElementById('edit-puntor-roli').value = p.roli;
+  document.getElementById('modal-puntor').classList.add('active');
+}
+
+async function ruajEditPuntor() {
+  const id = document.getElementById('edit-puntor-id').value;
+  const emri = document.getElementById('edit-puntor-emri').value;
+  const password = document.getElementById('edit-puntor-password').value;
+  const roli = document.getElementById('edit-puntor-roli').value;
+  const body = { emri, roli };
+  if (password) body.password = password;
+  try {
+    await api('PUT', '/puntoret/' + id, body);
+    alert('✅ U ruajt');
+    mbyllModal('modal-puntor');
+    await ngarkoPuntoret();
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
+async function fshiPuntorin(id) {
+  if (!confirm('Deaktivizo këtë puntor?')) return;
+  try {
+    await api('DELETE', '/puntoret/' + id);
+    await ngarkoPuntoret();
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
+// ---------- PRODUKTET ADMIN ----------
+function renderProdukteTabela() {
+  document.getElementById('produkte-tabela').innerHTML = state.produktet.map(p => `
+    <tr>
+      <td>${p.id}</td><td>${p.emri}</td><td>${p.kategoria}</td>
+      <td>${p.cmimi.toFixed(2)} €</td><td>${p.stoku}</td>
+      <td>
+        <button class="btn-warning" style="padding:5px 10px; font-size:0.8rem;" onclick="editoProduktin(${p.id})">✏️</button>
+        ${state.user.roli === 'admin' ? `<button class="btn-danger" style="padding:5px 10px; font-size:0.8rem;" onclick="fshiProduktin(${p.id})">🗑️</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderStokTabela() {
+  document.getElementById('stok-tabela').innerHTML = state.produktet.map(p => {
+    const status = p.stoku <= 5 ? '<span class="badge badge-red">I ulët</span>' :
+                   p.stoku <= 10 ? '<span class="badge badge-orange">Mesatar</span>' :
+                   '<span class="badge badge-green">OK</span>';
+    return `<tr>
+      <td>${p.emri}</td><td>${p.kategoria}</td><td>${p.cmimi.toFixed(2)} €</td>
+      <td><b>${p.stoku}</b></td><td>${(p.cmimi * p.stoku).toFixed(2)} €</td>
+      <td>${status}</td>
+      <td><button class="btn-primary" style="padding:5px 10px; font-size:0.8rem;" onclick="shtoStok(${p.id})">➕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function krijoProdukt() {
+  const id = document.getElementById('produkt-id').value;
+  const body = {
+    emri: document.getElementById('produkt-emri').value.trim(),
+    kategoria: document.getElementById('produkt-kategoria').value,
+    cmimi: parseFloat(document.getElementById('produkt-cmimi').value),
+    stoku: parseInt(document.getElementById('produkt-stoku').value) || 0,
+    barkodi: document.getElementById('produkt-barkodi').value.trim() || null,
+  };
+  if (!body.emri || isNaN(body.cmimi)) { alert('Plotëso saktë'); return; }
+  try {
+    if (id) {
+      await api('PUT', '/produktet/' + id, body);
+    } else {
+      await api('POST', '/produktet', body);
     }
-    alert('✅ Shitja u regjistrua dhe stoku u zvogëlua!');
-    renderShitje();
-  } catch (e) {
-    console.error('GABIM:', e);
-    alert('❌ ' + e.message);
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle"></i> Përfundo'; }
-  }
+    pastroFormenProdukt();
+    await ngarkoProduktet();
+  } catch(e) { alert('❌ ' + e.message); }
 }
 
-// =====================================================
-// SKANERI I KAMERËS - ME FIX (ndalon pas skanimit të parë)
-// =====================================================
-async function toggleScanner() {
-  const div = document.getElementById('reader');
-  const txt = document.getElementById('scannerBtnTxt');
-  
-  // Nëse skaneri është aktiv → ndaloje
-  if (scannerActive && scanner) {
-    try { await scanner.stop(); scanner.clear(); } catch(e){}
-    scannerActive = false;
-    div.classList.add('hidden');
-    txt.textContent = 'Skano me kamerë';
-    scanner = null;
-    return;
-  }
-  
-  // Fillo skanimin
-  div.classList.remove('hidden');
-  txt.textContent = 'Ndalo skanimin';
-  scanner = new Html5Qrcode("reader");
-  
-  // Flamur për të parandaluar skanimin e dyfishtë
-  let skanimPërfunduar = false;
-  
+function editoProduktin(id) {
+  const p = state.produktet.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('produkt-id').value = p.id;
+  document.getElementById('produkt-emri').value = p.emri;
+  document.getElementById('produkt-kategoria').value = p.kategoria;
+  document.getElementById('produkt-cmimi').value = p.cmimi;
+  document.getElementById('produkt-stoku').value = p.stoku;
+  document.getElementById('produkt-barkodi').value = p.barkodi || '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function pastroFormenProdukt() {
+  document.getElementById('produkt-id').value = '';
+  document.getElementById('produkt-emri').value = '';
+  document.getElementById('produkt-cmimi').value = '';
+  document.getElementById('produkt-stoku').value = 0;
+  document.getElementById('produkt-barkodi').value = '';
+}
+
+async function fshiProduktin(id) {
+  if (!confirm('Fshi këtë produkt?')) return;
+  try { await api('DELETE', '/produktet/' + id); await ngarkoProduktet(); }
+  catch(e) { alert('❌ ' + e.message); }
+}
+
+async function shtoStok(id) {
+  const sasia = prompt('Sa copë të shtohen?');
+  if (!sasia || isNaN(sasia)) return;
+  const arsyeja = prompt('Arsyeja (opsionale):') || '';
   try {
-    await scanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 250, height: 150 } },
-      async function(text) {
-        // Nëse kemi skanuar tashmë, injoro
-        if (skanimPërfunduar) return;
-        skanimPërfunduar = true;
-        
-        // Dridhje feedback
-        if (navigator.vibrate) navigator.vibrate(100);
-        
-        // Ndalojmë skanimin menjëherë
-        try { 
-          await scanner.stop(); 
-          scanner.clear(); 
-        } catch(e){}
-        scannerActive = false;
-        div.classList.add('hidden');
-        txt.textContent = 'Skano me kamerë';
-        scanner = null;
-        
-        // Procesojmë barkodin
-        document.getElementById('barkodiInput').value = text;
-        await kerkoBarkod();
-      }, 
-      function(){}
-    );
-    scannerActive = true;
-  } catch (e) {
-    alert('Gabim kamera: ' + e.message);
-    div.classList.add('hidden');
-    txt.textContent = 'Skano me kamerë';
-    scanner = null;
+    await api('POST', '/produktet/' + id + '/shto-stok', { sasia: parseInt(sasia), arsyeja });
+    await ngarkoProduktet();
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
+function rifreskoStok() { ngarkoProduktet(); }
+function shfaqStokUlet() {
+  const ulet = state.produktet.filter(p => p.stoku <= 5 && p.kategoria !== 'Shërbim - Mbushje USB');
+  if (!ulet.length) { alert('✅ Nuk ka produkte me stok të ulët'); return; }
+  alert('⚠️ Produkte me stok të ulët:\n\n' + ulet.map(p => `• ${p.emri}: ${p.stoku} copë`).join('\n'));
+}
+
+// ---------- RAPORT DITOR ----------
+let raportDitorAktual = [];
+async function shfaqRaportDitor() {
+  const data = document.getElementById('ditor-data').value;
+  if (!data) return;
+  const container = document.getElementById('raport-ditor-content');
+  container.innerHTML = '<div class="card">⏳ Duke u ngarkuar...</div>';
+  try {
+    raportDitorAktual = await api('GET', '/raport/ditor?data=' + data);
+    if (!raportDitorAktual.length) {
+      container.innerHTML = `<div class="card"><div class="alert alert-warning">Nuk ka shitje për datën ${data}.</div></div>`;
+      return;
+    }
+    let totali = 0;
+    const sipasPuntorit = {}, sipasKategorise = {}, sipasNdrrimit = {};
+    const kupona = {};
+    raportDitorAktual.forEach(r => {
+      totali += r.totali;
+      sipasPuntorit[r.puntori_emri] = sipasPuntorit[r.puntori_emri] || { total: 0, sasia: 0, artikuj: [] };
+      sipasPuntorit[r.puntori_emri].total += r.totali;
+      sipasPuntorit[r.puntori_emri].sasia += r.sasia;
+      sipasPuntorit[r.puntori_emri].artikuj.push(r);
+      sipasKategorise[r.kategoria] = (sipasKategorise[r.kategoria] || 0) + r.totali;
+      sipasNdrrimit[r.ndrrimi] = (sipasNdrrimit[r.ndrrimi] || 0) + r.totali;
+      kupona[r.kupon_nr] = (kupona[r.kupon_nr] || 0) + r.totali;
+    });
+
+    let html = `
+      <div class="stats-grid">
+        <div class="stat-card green"><div class="label">Totali i Ditës</div><div class="value">${totali.toFixed(2)} €</div></div>
+        <div class="stat-card"><div class="label">Nr. Shitjeve</div><div class="value">${raportDitorAktual.length}</div></div>
+        <div class="stat-card orange"><div class="label">Kupona</div><div class="value">${Object.keys(kupona).length}</div></div>
+        <div class="stat-card red"><div class="label">Puntorë</div><div class="value">${Object.keys(sipasPuntorit).length}</div></div>
+      </div>
+    `;
+
+    Object.keys(sipasPuntorit).forEach(p => {
+      const info = sipasPuntorit[p];
+      html += `
+        <div class="card">
+          <h3>👤 ${p} — <span style="color:var(--primary);">${info.total.toFixed(2)} €</span> (${info.sasia} artikuj)</h3>
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ora</th><th>Produkti</th><th>Kat.</th><th>Sasia</th><th>Çmimi</th><th>Totali</th><th>Kupon</th></tr></thead>
+            <tbody>
+      `;
+      info.artikuj.forEach(r => {
+        html += `<tr>
+          <td>${r.ora}</td><td>${r.produkti_emri}</td><td>${r.kategoria}</td>
+          <td>${r.sasia}</td><td>${r.cmimi.toFixed(2)} €</td>
+          <td><b>${r.totali.toFixed(2)} €</b></td>
+          <td><small>${r.kupon_nr || '-'}</small></td>
+        </tr>`;
+      });
+      html += `</tbody></table></div></div>`;
+    });
+
+    html += `<div class="card"><h3>🕐 Sipas Ndrrinit</h3>`;
+    Object.keys(sipasNdrrimit).forEach(n => {
+      html += `<div style="padding:10px; background:#f0f2f5; border-radius:8px; margin:5px 0;"><b>${n}</b>: ${sipasNdrrimit[n].toFixed(2)} €</div>`;
+    });
+    html += `</div>`;
+
+    html += `<div class="card"><h3>📦 Sipas Kategorisë</h3><table><thead><tr><th>Kategoria</th><th>Totali</th></tr></thead><tbody>`;
+    Object.keys(sipasKategorise).sort().forEach(k => {
+      html += `<tr><td>${k}</td><td><b>${sipasKategorise[k].toFixed(2)} €</b></td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = `<div class="card"><div class="alert alert-danger">${e.message}</div></div>`;
   }
 }
 
-// =====================================================
-// STOK
-// =====================================================
-async function renderStok() {
-  const mc = document.getElementById('mainContent');
-  mc.innerHTML = '<p>Duke u ngarkuar...</p>';
-  const { data } = await db.from('produktet').select('*').order('sasia');
-  mc.innerHTML = '<h3 class="mb-3">📋 Menaxhimi i Stokut</h3>' +
-    '<div class="card"><div class="table-responsive"><table class="table mb-0 align-middle">' +
-    '<thead class="table-light"><tr><th>Foto</th><th>Barkodi</th><th>Emri</th><th>Kategoria</th><th>Stoku</th><th>Përditëso</th></tr></thead>' +
-    '<tbody>' + (data||[]).map(p =>
-      '<tr><td>' + (p.foto_url?'<img src="'+p.foto_url+'" class="thumb">':'—') + '</td>' +
-      '<td><code>' + p.barkodi + '</code></td>' +
-      '<td>' + p.emri + '</td>' +
-      '<td>' + (p.kategoria||'-') + '</td>' +
-      '<td><span class="badge ' + (p.sasia<5?'bg-danger':'bg-success') + '">' + p.sasia + '</span></td>' +
-      '<td><div class="input-group input-group-sm" style="max-width:180px">' +
-      '<input id="stok_' + p.id + '" type="number" class="form-control" value="' + p.sasia + '">' +
-      '<button class="btn btn-primary" onclick="ruajStok(' + p.id + ')">💾</button></div></td></tr>'
-    ).join('') + '</tbody></table></div></div>';
+// ---------- RAPORT MUJOR ----------
+let raportMujorAktual = [];
+async function shfaqRaportMujor() {
+  const muaji = document.getElementById('mujor-muaji').value;
+  if (!muaji) return;
+  const container = document.getElementById('raport-mujor-content');
+  container.innerHTML = '<div class="card">⏳ Duke u ngarkuar...</div>';
+  try {
+    raportMujorAktual = await api('GET', '/raport/mujor?muaji=' + muaji);
+    if (!raportMujorAktual.length) {
+      container.innerHTML = `<div class="card"><div class="alert alert-warning">Nuk ka shitje për muajin ${muaji}.</div></div>`;
+      return;
+    }
+    let totali = 0;
+    const sipasDiteve = {}, sipasPuntorit = {}, sipasKategorise = {}, produktetCount = {};
+    raportMujorAktual.forEach(r => {
+      totali += r.totali;
+      sipasDiteve[r.data] = (sipasDiteve[r.data] || 0) + r.totali;
+      sipasPuntorit[r.puntori_emri] = sipasPuntorit[r.puntori_emri] || { total: 0, sasia: 0, ditet: {} };
+      sipasPuntorit[r.puntori_emri].total += r.totali;
+      sipasPuntorit[r.puntori_emri].sasia += r.sasia;
+      sipasPuntorit[r.puntori_emri].ditet[r.data] = (sipasPuntorit[r.puntori_emri].ditet[r.data] || 0) + r.totali;
+      sipasKategorise[r.kategoria] = (sipasKategorise[r.kategoria] || 0) + r.totali;
+      produktetCount[r.produkti_emri] = (produktetCount[r.produkti_emri] || 0) + r.sasia;
+    });
+    const dite = Object.keys(sipasDiteve).sort();
+    const mesatarja = totali / dite.length;
+
+    let html = `
+      <div class="stats-grid">
+        <div class="stat-card green"><div class="label">Totali Mujor</div><div class="value">${totali.toFixed(2)} €</div></div>
+        <div class="stat-card"><div class="label">Ditë me Shitje</div><div class="value">${dite.length}</div></div>
+        <div class="stat-card orange"><div class="label">Mesatarja Ditore</div><div class="value">${mesatarja.toFixed(2)} €</div></div>
+        <div class="stat-card red"><div class="label">Nr. Shitjeve</div><div class="value">${raportMujorAktual.length}</div></div>
+      </div>
+      <div class="card"><h3>📅 Shitjet Ditore</h3><div class="table-wrap"><table>
+        <thead><tr><th>Data</th><th>Totali</th></tr></thead><tbody>
+    `;
+    dite.forEach(d => { html += `<tr><td>${d}</td><td><b>${sipasDiteve[d].toFixed(2)} €</b></td></tr>`; });
+    html += `</tbody></table></div></div>`;
+
+    html += `<div class="card"><h3>👥 Sipas Puntorit</h3>`;
+    Object.keys(sipasPuntorit).forEach(p => {
+      const info = sipasPuntorit[p];
+      html += `<div style="margin:15px 0; padding:12px; background:#eef3ff; border-radius:8px;">
+        <h4 style="color:var(--primary);">👤 ${p} — <b>${info.total.toFixed(2)} €</b> (${info.sasia} artikuj, ${Object.keys(info.ditet).length} ditë)</h4>
+        <table><thead><tr><th>Data</th><th>Totali</th></tr></thead><tbody>`;
+      Object.keys(info.ditet).sort().forEach(d => {
+        html += `<tr><td>${d}</td><td>${info.ditet[d].toFixed(2)} €</td></tr>`;
+      });
+      html += `</tbody></table></div>`;
+    });
+    html += `</div>`;
+
+    html += `<div class="card"><h3>📦 Sipas Kategorisë</h3><table><thead><tr><th>Kategoria</th><th>Totali</th></tr></thead><tbody>`;
+    Object.keys(sipasKategorise).sort().forEach(k => {
+      html += `<tr><td>${k}</td><td><b>${sipasKategorise[k].toFixed(2)} €</b></td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    html += `<div class="card"><h3>🏆 Top 15 Produktet</h3><table><thead><tr><th>Produkti</th><th>Sasia</th></tr></thead><tbody>`;
+    Object.keys(produktetCount).sort((a,b)=>produktetCount[b]-produktetCount[a]).slice(0,15).forEach(p => {
+      html += `<tr><td>${p}</td><td><b>${produktetCount[p]}</b></td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = `<div class="card"><div class="alert alert-danger">${e.message}</div></div>`;
+  }
 }
 
-async function ruajStok(id) {
-  const val = parseInt(document.getElementById('stok_' + id).value);
-  const { error } = await db.from('produktet').update({ sasia: val }).eq('id', id);
-  if (error) return alert(error.message);
-  alert('✅ Stoku u përditësua!');
-  renderStok();
+// ---------- EKSPORT CSV ----------
+function eksportoCSV(tipi) {
+  let rows = [];
+  const data = tipi === 'ditor' ? raportDitorAktual : raportMujorAktual;
+  if (!data.length) { alert('Nuk ka të dhëna!'); return; }
+  rows.push(['ID','Data','Ora','Puntori','Ndrrimi','Produkti','Kategoria','Sasia','Çmimi','Totali','Kupon']);
+  data.forEach(r => rows.push([r.id, r.data, r.ora, r.puntori_emri, r.ndrrimi, r.produkti_emri, r.kategoria, r.sasia, r.cmimi, r.totali, r.kupon_nr || '']));
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `raport_${tipi}_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
 }
 
-// =====================================================
-// RAPORTE
-// =====================================================
-async function renderRaporte() {
-  const mc = document.getElementById('mainContent');
-  const sot = new Date().toISOString().slice(0,10);
-  mc.innerHTML = '<h3 class="mb-3">📈 Raporte</h3>' +
-    '<div class="card p-3 mb-3"><div class="row g-2 align-items-end">' +
-    '<div class="col-md-3"><label class="form-label">Nga</label><input id="r_nga" type="date" class="form-control" value="' + sot + '"></div>' +
-    '<div class="col-md-3"><label class="form-label">Deri</label><input id="r_deri" type="date" class="form-control" value="' + sot + '"></div>' +
-    '<div class="col-md-3"><label class="form-label">Punëtori</label><select id="r_punetor" class="form-select"><option value="">Të gjithë</option></select></div>' +
-    '<div class="col-md-3"><button class="btn btn-primary w-100" onclick="ngarkoRaportet()">🔍 Filtro</button></div>' +
-    '</div></div><div id="raportBody"></div>';
-  const { data: pun } = await db.from('profiles').select('*').eq('roli','punetor');
-  const sel = document.getElementById('r_punetor');
-  (pun||[]).forEach(p => { sel.innerHTML += '<option value="' + p.id + '">' + p.emri + '</option>'; });
-  ngarkoRaportet();
+// ---------- BACKUP ----------
+async function backup() {
+  try {
+    const res = await fetch(API + '/backup', { headers: { 'Authorization': 'Bearer ' + state.token } });
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+  } catch(e) { alert('❌ ' + e.message); }
 }
 
-async function ngarkoRaportet() {
-  const nga = document.getElementById('r_nga').value;
-  const deri = document.getElementById('r_deri').value;
-  const pid = document.getElementById('r_punetor').value;
-  const rb = document.getElementById('raportBody');
-  rb.innerHTML = '<p>Duke u ngarkuar...</p>';
-  let q = db.from('shitjet').select('*').gte('krijuar_me', nga + 'T00:00:00').lte('krijuar_me', deri + 'T23:59:59').order('krijuar_me', { ascending:false });
-  if (pid) q = q.eq('punetor_id', pid);
-  const { data: shitjet } = await q;
-  const totalet = {};
-  (shitjet||[]).forEach(s => {
-    totalet[s.punetor_emri] = totalet[s.punetor_emri] || { nr:0, total:0 };
-    totalet[s.punetor_emri].nr++;
-    totalet[s.punetor_emri].total += Number(s.totali);
-  });
-  const ditore = {};
-  (shitjet||[]).forEach(s => {
-    const d = s.krijuar_me.slice(0,10);
-    ditore[d] = ditore[d] || { nr:0, total:0 };
-    ditore[d].nr++;
-    ditore[d].total += Number(s.totali);
-  });
-  const { data: mujore } = await db.from('raport_mujor').select('*').limit(12);
-  const totali = (shitjet||[]).reduce((s,x)=>s+Number(x.totali), 0);
-  rb.innerHTML = '<div class="card p-3 mb-3"><h5>💰 Totali për periudhën: <span class="text-success">' + totali.toFixed(2) + ' €</span> (' + (shitjet?.length||0) + ' shitje)</h5></div>' +
-    '<div class="row g-3 mb-3">' +
-    '<div class="col-md-6"><div class="card p-3"><h5>👤 Raport sipas punëtorit</h5>' +
-    '<table class="table table-sm mb-0"><thead><tr><th>Punëtori</th><th>Shitje</th><th>Totali (€)</th></tr></thead><tbody>' +
-    (Object.entries(totalet).map(([k,v]) => '<tr><td>'+k+'</td><td>'+v.nr+'</td><td><b>'+v.total.toFixed(2)+'</b></td></tr>').join('') || '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>') +
-    '</tbody></table></div></div>' +
-    '<div class="col-md-6"><div class="card p-3"><h5>📅 Raport ditor</h5>' +
-    '<table class="table table-sm mb-0"><thead><tr><th>Dita</th><th>Shitje</th><th>Totali (€)</th></tr></thead><tbody>' +
-    (Object.entries(ditore).sort().reverse().map(([k,v]) => '<tr><td>'+k+'</td><td>'+v.nr+'</td><td><b>'+v.total.toFixed(2)+'</b></td></tr>').join('') || '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>') +
-    '</tbody></table></div></div></div>' +
-    '<div class="card p-3 mb-3"><h5>📆 Raport mujor (12 muajt e fundit)</h5>' +
-    '<table class="table table-sm mb-0"><thead><tr><th>Muaji</th><th>Shitje</th><th>Totali (€)</th></tr></thead><tbody>' +
-    ((mujore||[]).map(m => '<tr><td>'+m.muaji+'</td><td>'+m.nr_shitjesh+'</td><td><b>'+Number(m.totali).toFixed(2)+'</b></td></tr>').join('') || '<tr><td colspan="3" class="text-muted">Nuk ka të dhëna</td></tr>') +
-    '</tbody></table></div>' +
-    '<div class="card p-3"><h5>🧾 Detajet e shitjeve</h5><div class="table-responsive">' +
-    '<table class="table table-sm mb-0"><thead><tr><th>Data</th><th>Produkti</th><th>Punëtori</th><th>Sasia</th><th>Totali</th></tr></thead><tbody>' +
-    ((shitjet||[]).map(s => '<tr><td>'+new Date(s.krijuar_me).toLocaleString('sq-AL')+'</td><td>'+s.emri_produktit+'</td><td>'+s.punetor_emri+'</td><td>'+s.sasia+'</td><td><b>'+Number(s.totali).toFixed(2)+' €</b></td></tr>').join('') || '<tr><td colspan="5" class="text-muted">Nuk ka shitje</td></tr>') +
-    '</tbody></table></div></div>';
+function fshiTeDhenat() {
+  if (!confirm('Kjo funksion vetëm në serverin SQLite. Jeni i sigurt?')) return;
+  alert('Për të fshirë të dhënat, kontakto administratorin e serverit.');
 }
 
-// =====================================================
-// PËRDORUESIT
-// =====================================================
-async function renderPerdoruesit() {
-  const mc = document.getElementById('mainContent');
-  const { data } = await db.from('profiles').select('*');
-  mc.innerHTML = '<h3 class="mb-3">👥 Përdoruesit</h3>' +
-    '<div class="card mb-3 p-3"><h6>➕ Shto punëtor të re</h6>' +
-    '<div class="alert alert-info small">Për të shtuar punëtor: shko në <b>Supabase → Authentication → Users → Add User</b> dhe vendos në <b>User Metadata</b>: <code>{"emri":"emri_i_punetorit","roli":"punetor"}</code></div>' +
-    '<table class="table mb-0"><thead><tr><th>Emri</th><th>Roli</th><th>Aktiv</th><th>Veprime</th></tr></thead><tbody>' +
-    (data||[]).map(u => '<tr><td><b>'+u.emri+'</b></td>' +
-      '<td><span class="badge ' + (u.roli==='admin'?'bg-danger':'bg-primary') + '">'+u.roli+'</span></td>' +
-      '<td>' + (u.aktiv?'✅':'❌') + '</td>' +
-      '<td><button class="btn btn-sm btn-warning" onclick="ndryshoRolin(\'' + u.id + '\',\'' + (u.roli==='admin'?'punetor':'admin') + '\')">Bëj ' + (u.roli==='admin'?'Punëtor':'Admin') + '</button> ' +
-      '<button class="btn btn-sm btn-danger" onclick="fshiPerdorues(\'' + u.id + '\')">Fshij</button></td></tr>'
-    ).join('') + '</tbody></table></div>';
-}
-
-async function ndryshoRolin(id, roli) {
-  const { error } = await db.from('profiles').update({ roli }).eq('id', id);
-  if (error) return alert(error.message);
-  renderPerdoruesit();
-}
-
-async function fshiPerdorues(id) {
-  if (!confirm('Fshij përdoruesin nga profiles?')) return;
-  const { error } = await db.from('profiles').delete().eq('id', id);
-  if (error) return alert(error.message);
-  renderPerdoruesit();
-}
-
-// =====================================================
-// INICIALIZIMI
-// =====================================================
-db.auth.onAuthStateChange(function(event) {
-  if (event === 'SIGNED_OUT') showLogin();
+// ---------- MODAL ----------
+function mbyllModal(id) { document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
 });
 
-window.addEventListener('load', async function() {
-  const { data: { session } } = await db.auth.getSession();
-  if (session) await loadUser();
+// ---------- TABS ----------
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+    if (t.dataset.tab === 'ditor') shfaqRaportDitor();
+    if (t.dataset.tab === 'mujor') shfaqRaportMujor();
+    if (t.dataset.tab === 'stok' || t.dataset.tab === 'produkte') ngarkoProduktet();
+    if (t.dataset.tab === 'shitje') rifreskoLive();
+    if (t.dataset.tab === 'cilesimet') ngarkoCilesimetPrinter();
+  };
+});
+
+function shfaqAlert(id, msg, tipi) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="alert alert-${tipi}">${msg}</div>`;
+  setTimeout(() => { el.innerHTML = ''; }, 4000);
+}
+
+// ---------- PWA ----------
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => console.log('✅ SW registered'));
+}
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  state.deferredPrompt = e;
+  document.getElementById('pwa-banner').classList.add('active');
+});
+async function instaloPWA() {
+  if (!state.deferredPrompt) return;
+  state.deferredPrompt.prompt();
+  const { outcome } = await state.deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('pwa-banner').classList.remove('active');
+  state.deferredPrompt = null;
+}
+document.getElementById('info-pwa').textContent = 'serviceWorker' in navigator ? '✅ Aktiv' : '❌ Jo';
+
+// ---------- AUTO REFRESH LIVE ----------
+setInterval(() => {
+  if (state.token && document.getElementById('panel-shitje').classList.contains('active')) {
+    rifreskoLive();
+  }
+}, 30000);
+
+// ---------- INIT ----------
+(async () => {
+  const userJson = localStorage.getItem('user');
+  if (userJson) state.user = JSON.parse(userJson);
+  if (await verifikoToken()) {
+    startApp();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+  ngarkoCilesimetPrinter();
+})();
+
+// Kujtesë për skanimin me Lexues Barkodesh USB (që shkruan si tastierë)
+document.getElementById('search-produkt').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const code = this.value.trim();
+    const p = state.produktet.find(x => x.barkodi === code);
+    if (p) {
+      shtoNeCart(p.id);
+      this.value = ''; // Pastro fushën pas skanimit me sukses
+      filtroProduktet();
+    } else {
+      shfaqAlert('shitje-alert', '⚠️ Asnjë produkt nuk u gjet me këtë barkod!', 'warning');
+    }
+  }
 });
 </script>
 </body>
