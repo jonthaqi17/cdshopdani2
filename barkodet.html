@@ -34,6 +34,12 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap:12px;
 }
+/* Stili per inputin e kopjeve */
+.copies-input {
+  width: 60px;
+  text-align: center;
+  font-weight: bold;
+}
 </style>
 </head>
 <body>
@@ -105,7 +111,7 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
   </div>
 
   <div class="card p-3 mb-3" style="max-height:400px; overflow-y:auto;">
-    <h6 class="mb-3">📦 Zgjidh produktet:</h6>
+    <h6 class="mb-3">📦 Zgjidh produktet dhe vendos sasinë:</h6>
     <div id="prodList"></div>
   </div>
 </div>
@@ -124,6 +130,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let PRODUKTET = [];
 let SELECTED = new Set();
+let COPIES = {}; // Objekt që mban sasinë për çdo produkt (id -> numri)
 
 async function checkAuth() {
   const { data: { user } } = await db.auth.getUser();
@@ -165,19 +172,32 @@ function renderLista() {
     return;
   }
   document.getElementById('infoText').textContent = PRODUKTET.length + ' produkte të gjetura';
+  
   list.innerHTML = PRODUKTET.map(p => {
     const checked = SELECTED.has(p.id) ? 'checked' : '';
-    return '<div class="form-check mb-2 p-2 border rounded">' +
-      '<input class="form-check-input" type="checkbox" id="chk_' + p.id + '" ' + checked + 
-      ' onchange="toggleSelect(' + p.id + ')">' +
-      '<label class="form-check-label w-100" for="chk_' + p.id + '" style="cursor:pointer">' +
-      '<b>' + p.emri + '</b> ' +
-      '<small class="text-muted">• <code>' + p.barkodi + '</code>' +
-      (p.kategoria ? ' • ' + p.kategoria : '') +
-      ' • ' + Number(p.cmimi_shitjes).toFixed(2) + ' €' +
-      ' • Stok: ' + p.sasia + '</small>' +
-      '</label></div>';
+    // Marrim sasine, nese s'eshte caktuar default eshte 1
+    const sasia = COPIES[p.id] || 1; 
+    
+    return '<div class="d-flex align-items-center mb-2 p-2 border rounded flex-wrap gap-2">' +
+      '<div class="form-check m-0 flex-grow-1">' +
+        '<input class="form-check-input" type="checkbox" id="chk_' + p.id + '" ' + checked + 
+        ' onchange="toggleSelect(' + p.id + ')">' +
+        '<label class="form-check-label w-100" for="chk_' + p.id + '" style="cursor:pointer">' +
+        '<b>' + p.emri + '</b> ' +
+        '<small class="text-muted">• <code>' + p.barkodi + '</code>' +
+        (p.kategoria ? ' • ' + p.kategoria : '') +
+        ' • ' + Number(p.cmimi_shitjes).toFixed(2) + ' €' +
+        ' • Stok: ' + p.sasia + '</small>' +
+        '</label>' +
+      '</div>' +
+      '<div class="d-flex align-items-center gap-1">' +
+        '<small class="text-muted">Kopje:</small>' +
+        '<input type="number" class="form-control form-control-sm copies-input" min="1" max="50" value="' + sasia + '" ' +
+        'onchange="updateCopies(' + p.id + ', this.value)" onclick="event.stopPropagation()">' +
+      '</div>' +
+      '</div>';
   }).join('');
+  
   updateCount();
 }
 
@@ -185,6 +205,22 @@ function toggleSelect(id) {
   if (SELECTED.has(id)) SELECTED.delete(id);
   else SELECTED.add(id);
   updateCount();
+  renderBarkodet();
+}
+
+function updateCopies(id, val) {
+  let num = parseInt(val);
+  if (isNaN(num) || num < 1) num = 1;
+  if (num > 50) num = 50; // Kufizim maksimal per siguri
+  COPIES[id] = num;
+  
+  // Nese e ndryshon sasine, e zgjedhim automatikisht produktin
+  if (!SELECTED.has(id)) {
+    SELECTED.add(id);
+    document.getElementById('chk_' + id).checked = true;
+    updateCount();
+  }
+  
   renderBarkodet();
 }
 
@@ -213,14 +249,22 @@ function renderBarkodet() {
     large:  { width: 1.5, height: 45, fontSize: 12, displayValue: true }
   };
   const cfg = sizeMap[size];
-  const selected = PRODUKTET.filter(p => SELECTED.has(p.id));
   
-  if (!selected.length) {
+  // Krijojme nje liste me te gjitha barkodet e zgjedhura (duke shtuar kopjet)
+  let allBarcodesToPrint = [];
+  PRODUKTET.filter(p => SELECTED.has(p.id)).forEach(p => {
+    let sasia = COPIES[p.id] || 1;
+    for(let i = 0; i < sasia; i++) {
+      allBarcodesToPrint.push(p);
+    }
+  });
+
+  if (!allBarcodesToPrint.length) {
     grid.innerHTML = '<p class="text-muted text-center p-4">Zgjidh produkte për të gjeneruar barkodet.</p>';
     return;
   }
   
-  grid.innerHTML = selected.map(p => 
+  grid.innerHTML = allBarcodesToPrint.map(p => 
     '<div class="barcode-item">' +
     (show !== 'barcode' ? '<div class="emri">' + p.emri + '</div>' : '') +
     '<svg class="barcode" data-barkod="' + p.barkodi + '"></svg>' +
@@ -248,8 +292,16 @@ function renderBarkodet() {
 
 // FUNKSIONI KRYESOR PËR PRINTIM (Krijon nje Iframe te pavarur)
 async function printBarcodes() {
-  const selected = PRODUKTET.filter(p => SELECTED.has(p.id));
-  if (!selected.length) {
+  // Krijojme nje liste me te gjitha barkodet e zgjedhura
+  let allBarcodesToPrint = [];
+  PRODUKTET.filter(p => SELECTED.has(p.id)).forEach(p => {
+    let sasia = COPIES[p.id] || 1;
+    for(let i = 0; i < sasia; i++) {
+      allBarcodesToPrint.push(p);
+    }
+  });
+
+  if (!allBarcodesToPrint.length) {
     alert('Zgjidh së paku një produkt për të printuar!');
     return;
   }
@@ -277,7 +329,8 @@ async function printBarcodes() {
   html += 'svg { max-width:100%; height:auto; display:block; }';
   html += '<\/style><\/head><body>';
 
-  selected.forEach(p => {
+  // Tani bejme loop mbi listen e re (ku jane edhe kopjet e shtuara)
+  allBarcodesToPrint.forEach(p => {
     html += '<div class="label">';
     if (show !== 'barcode') html += '<div class="emri">' + p.emri + '</div>';
     html += '<svg class="barcode" data-barkod="' + p.barkodi + '"></svg>';
@@ -321,6 +374,7 @@ async function handlePrintParam() {
     const { data } = await db.from('produktet').select('*').eq('id', printId).single();
     if (data) {
       SELECTED.add(data.id);
+      COPIES[data.id] = 1; // Default 1 here
       PRODUKTET = [data];
       renderLista();
       renderBarkodet();
