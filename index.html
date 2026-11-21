@@ -633,7 +633,10 @@ async function ruajStok(id) {
 async function renderRaporte() {
   const mc = document.getElementById('mainContent');
   const sot = new Date().toISOString().slice(0,10);
-  mc.innerHTML = '<h3 class="mb-3">📈 Raporte</h3>' +
+  mc.innerHTML = '<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">' +
+    '<h3 class="mb-0">📈 Raporte</h3>' +
+    '<button class="btn btn-warning" onclick="printoRaportinDitor()"><i class="bi bi-printer"></i> Printo Raportin Ditor (A4)</button>' +
+    '</div>' +
     '<div class="card p-3 mb-3"><div class="row g-2 align-items-end">' +
     '<div class="col-md-3"><label class="form-label">Nga</label><input id="r_nga" type="date" class="form-control" value="' + sot + '"></div>' +
     '<div class="col-md-3"><label class="form-label">Deri</label><input id="r_deri" type="date" class="form-control" value="' + sot + '"></div>' +
@@ -671,7 +674,6 @@ async function ngarkoRaportet() {
   const { data: mujore } = await db.from('raport_mujor').select('*').limit(12);
   const totali = (shitjet||[]).reduce((s,x)=>s+Number(x.totali), 0);
   
-  // E re: Butoni "Fshij" u shtua në tabelën e detajeve
   rb.innerHTML = '<div class="card p-3 mb-3"><h5>💰 Totali për periudhën: <span class="text-success">' + totali.toFixed(2) + ' €</span> (' + (shitjet?.length||0) + ' shitje)</h5></div>' +
     '<div class="row g-3 mb-3">' +
     '<div class="col-md-6"><div class="card p-3"><h5>👤 Raport sipas punëtorit</h5>' +
@@ -694,7 +696,6 @@ async function ngarkoRaportet() {
       '<td>'+s.punetor_emri+'</td>' +
       '<td>'+s.sasia+'</td>' +
       '<td><b>'+Number(s.totali).toFixed(2)+' €</b></td>' +
-      // Ketu eshte butoni i fshirjes
       '<td><button class="btn btn-sm btn-outline-danger" onclick="fshiShitjen('+s.id+', '+s.produkt_id+', '+s.sasia+')" title="Fshij shitjen"><i class="bi bi-trash"></i></button></td></tr>'
     ).join('') || '<tr><td colspan="6" class="text-muted">Nuk ka shitje</td></tr>') +
     '</tbody></table></div></div>';
@@ -728,6 +729,132 @@ async function fshiShitjen(shitjeId, produktId, sasia) {
   } catch (e) {
     alert('❌ ' + e.message);
   }
+}
+
+// =====================================================
+// PRINTIMI I RAPORTIT DITOR NË FLET A4
+// =====================================================
+async function printoRaportinDitor() {
+  const dataZgjedhur = prompt(
+    'Data e raportit (YYYY-MM-DD):',
+    new Date().toISOString().slice(0, 10)
+  );
+  if (!dataZgjedhur) return;
+
+  const fillimi = dataZgjedhur + 'T00:00:00';
+  const fundi   = dataZgjedhur + 'T23:59:59';
+
+  // 1. Merr shitjet e ditës
+  const { data: shitjet, error: errS } = await db
+    .from('shitjet')
+    .select('*')
+    .gte('krijuar_me', fillimi)
+    .lte('krijuar_me', fundi)
+    .order('krijuar_me');
+
+  if (errS) { alert('Gabim: ' + errS.message); return; }
+  if (!shitjet || !shitjet.length) {
+    alert('Nuk ka shitje për datën ' + dataZgjedhur);
+    return;
+  }
+
+  // 2. Llogaritje
+  const totalShitje  = shitjet.reduce((s, x) => s + Number(x.totali || 0), 0);
+  const totalArtikuj = shitjet.reduce((s, x) => s + Number(x.sasia || 0), 0);
+
+  // Grupim sipas punëtorit
+  const sipasPuntorit = {};
+  shitjet.forEach(s => {
+    const emri = s.punetor_emri || 'Panjohur';
+    if (!sipasPuntorit[emri]) sipasPuntorit[emri] = { shitje: 0, total: 0, artikuj: 0 };
+    sipasPuntorit[emri].shitje  += 1;
+    sipasPuntorit[emri].total   += Number(s.totali || 0);
+    sipasPuntorit[emri].artikuj += Number(s.sasia || 0);
+  });
+
+  // 3. Ndërto HTML A4
+  let html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  html += '<title>Raport Ditor ' + dataZgjedhur + '</title>';
+  html += '<style>';
+  html += '@page { size: A4; margin: 12mm; }';
+  html += 'body { font-family: Arial, sans-serif; font-size: 11px; color:#000; margin:0; padding:0; }';
+  html += 'h1 { font-size: 20px; text-align:center; margin:0 0 4px; }';
+  html += 'h2 { font-size: 14px; margin: 14px 0 6px; border-bottom: 2px solid #333; padding-bottom:3px; }';
+  html += '.subtitle { text-align:center; color:#555; font-size:12px; margin-bottom:14px; }';
+  html += 'table { width:100%; border-collapse: collapse; margin-bottom:10px; }';
+  html += 'th, td { border:1px solid #999; padding:4px 6px; text-align:left; font-size:10.5px; }';
+  html += 'th { background:#e5e7eb; font-weight:bold; }';
+  html += 'td.num, th.num { text-align:right; }';
+  html += '.total-row td { font-weight:bold; background:#f3f4f6; }';
+  html += '.summary-box { display:flex; gap:10px; margin-bottom:14px; }';
+  html += '.summary-box > div { flex:1; border:1px solid #999; padding:8px; text-align:center; }';
+  html += '.summary-box .lbl { font-size:10px; color:#555; }';
+  html += '.summary-box .val { font-size:16px; font-weight:bold; }';
+  html += '.footer { margin-top:20px; text-align:center; font-size:9px; color:#777; border-top:1px solid #ccc; padding-top:6px; }';
+  html += '</style></head><body>';
+
+  // Header
+  html += '<h1>RAPORT DITOR I SHITJEVE</h1>';
+  html += '<div class="subtitle">Data: <b>' + dataZgjedhur + '</b> &nbsp;•&nbsp; Printuar: ' + new Date().toLocaleString('sq-AL') + '</div>';
+
+  // Përmbledhje
+  html += '<div class="summary-box">';
+  html += '<div><div class="lbl">Total Shitje</div><div class="val">' + totalShitje.toFixed(2) + ' €</div></div>';
+  html += '<div><div class="lbl">Nr. Transaksioneve</div><div class="val">' + shitjet.length + '</div></div>';
+  html += '<div><div class="lbl">Nr. Artikujve</div><div class="val">' + totalArtikuj + '</div></div>';
+  html += '</div>';
+
+  // Raporti sipas punëtorit
+  html += '<h2>📊 Përmbledhje sipas Punëtorit</h2>';
+  html += '<table><thead><tr>';
+  html += '<th>Punëtori</th><th class="num">Nr. Shitjeve</th><th class="num">Nr. Artikujve</th><th class="num">Totali (€)</th>';
+  html += '</tr></thead><tbody>';
+  Object.entries(sipasPuntorit).forEach(([emri, v]) => {
+    html += '<tr><td>' + emri + '</td><td class="num">' + v.shitje + '</td><td class="num">' + v.artikuj + '</td><td class="num">' + v.total.toFixed(2) + '</td></tr>';
+  });
+  html += '<tr class="total-row"><td>TOTAL</td><td class="num">' + shitjet.length + '</td><td class="num">' + totalArtikuj + '</td><td class="num">' + totalShitje.toFixed(2) + '</td></tr>';
+  html += '</tbody></table>';
+
+  // Detajet e shitjeve
+  html += '<h2>🧾 Detajet e Shitjeve</h2>';
+  html += '<table><thead><tr>';
+  html += '<th>#</th><th>Ora</th><th>Punëtori</th><th>Produkti</th><th class="num">Sasia</th><th class="num">Çmimi (€)</th><th class="num">Totali (€)</th>';
+  html += '</tr></thead><tbody>';
+  shitjet.forEach((s, i) => {
+    const ora = new Date(s.krijuar_me).toLocaleTimeString('sq-AL', { hour:'2-digit', minute:'2-digit' });
+    html += '<tr>';
+    html += '<td>' + (i + 1) + '</td>';
+    html += '<td>' + ora + '</td>';
+    html += '<td>' + (s.punetor_emri || '-') + '</td>';
+    html += '<td>' + (s.emri_produktit || '-') + '</td>';
+    html += '<td class="num">' + (s.sasia || 0) + '</td>';
+    html += '<td class="num">' + Number(s.cmimi_njesi || 0).toFixed(2) + '</td>';
+    html += '<td class="num">' + Number(s.totali || 0).toFixed(2) + '</td>';
+    html += '</tr>';
+  });
+  html += '<tr class="total-row"><td colspan="6">TOTAL DITOR</td><td class="num">' + totalShitje.toFixed(2) + '</td></tr>';
+  html += '</tbody></table>';
+
+  // Footer
+  html += '<div class="footer">Raport i gjeneruar automatikisht • Sistemi i Dyqanit</div>';
+  html += '</body></html>';
+
+  // 4. Printo në iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+  iframe.srcdoc = html;
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }, 500);
+  };
 }
 
 // =====================================================
