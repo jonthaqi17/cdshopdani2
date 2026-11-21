@@ -52,6 +52,9 @@ body { background:#f1f5f9; font-family: 'Segoe UI', sans-serif; padding:20px; }
       <button class="btn btn-outline-secondary" onclick="window.location.href='./'">
         <i class="bi bi-arrow-left"></i> Kthehu
       </button>
+      <button class="btn btn-warning" onclick="printRaportDitor()">
+        <i class="bi bi-file-earmark-text"></i> Printo Raportin Ditor
+      </button>
       <button class="btn btn-primary" onclick="printBarcodes()">
         <i class="bi bi-printer"></i> Printo
       </button>
@@ -364,6 +367,175 @@ async function printBarcodes() {
   iframe.style.border = '0';
   document.body.appendChild(iframe);
   iframe.srcdoc = html;
+}
+
+// ============================================================
+// PRINTIMI I RAPORTIT DITOR NË A4
+// ============================================================
+async function printRaportDitor() {
+  // 1. Merr datën e sotme (ose lejo përdoruesin të zgjedhë)
+  const dataZgjedhur = prompt(
+    'Data e raportit (YYYY-MM-DD):',
+    new Date().toISOString().slice(0, 10)
+  );
+  if (!dataZgjedhur) return;
+
+  const fillimi = dataZgjedhur + 'T00:00:00';
+  const fundi   = dataZgjedhur + 'T23:59:59';
+
+  // 2. Merr shitjet e ditës
+  const { data: shitjet, error: errS } = await db
+    .from('shitjet')
+    .select('*')
+    .gte('data_shitjes', fillimi)
+    .lte('data_shitjes', fundi)
+    .order('data_shitjes');
+
+  if (errS) {
+    alert('Gabim te shitjet: ' + errS.message);
+    return;
+  }
+
+  if (!shitjet || !shitjet.length) {
+    alert('Nuk ka shitje për datën ' + dataZgjedhur);
+    return;
+  }
+
+  const shitjeIds = shitjet.map(s => s.id);
+
+  // 3. Merr detajet e shitjeve
+  const { data: detajet, error: errD } = await db
+    .from('shitjet_detaje')
+    .select('*')
+    .in('shitje_id', shitjeIds);
+
+  if (errD) {
+    alert('Gabim te detajet: ' + errD.message);
+    return;
+  }
+
+  // 4. Merr produktet për emrat
+  const { data: produktet } = await db.from('produktet').select('id, emri, barkodi');
+  const mapProdukte = {};
+  (produktet || []).forEach(p => { mapProdukte[p.id] = p; });
+
+  // 5. Merr profilet për emrat e punëtorëve
+  const { data: profilet } = await db.from('profiles').select('id, emri, mbiemri, username');
+  const mapProfiles = {};
+  (profilet || []).forEach(p => { mapProfiles[p.id] = p; });
+
+  // 6. Ndërto strukturat e raportit
+  const totalShitje = shitjet.reduce((s, x) => s + Number(x.total || 0), 0);
+  const totalArtikuj = shitjet.reduce((s, x) => s + Number(x.sasia_total || 0), 0);
+
+  // Grupim sipas punëtorit
+  const sipasPuntorit = {};
+  shitjet.forEach(s => {
+    const pid = s.user_id || s.punetori_id || 'panjohur';
+    if (!sipasPuntorit[pid]) {
+      sipasPuntorit[pid] = { shitje: 0, total: 0, artikuj: 0 };
+    }
+    sipasPuntorit[pid].shitje += 1;
+    sipasPuntorit[pid].total += Number(s.total || 0);
+    sipasPuntorit[pid].artikuj += Number(s.sasia_total || 0);
+  });
+
+  // 7. Ndërto HTML-in e raportit A4
+  let html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  html += '<title>Raport Ditor ' + dataZgjedhur + '</title>';
+  html += '<style>';
+  html += '@page { size: A4; margin: 12mm; }';
+  html += 'body { font-family: Arial, sans-serif; font-size: 11px; color:#000; margin:0; padding:0; }';
+  html += 'h1 { font-size: 20px; text-align:center; margin:0 0 4px; }';
+  html += 'h2 { font-size: 14px; margin: 14px 0 6px; border-bottom: 2px solid #333; padding-bottom:3px; }';
+  html += '.subtitle { text-align:center; color:#555; font-size:12px; margin-bottom:14px; }';
+  html += 'table { width:100%; border-collapse: collapse; margin-bottom:10px; }';
+  html += 'th, td { border:1px solid #999; padding:4px 6px; text-align:left; font-size:10.5px; }';
+  html += 'th { background:#e5e7eb; font-weight:bold; }';
+  html += 'td.num, th.num { text-align:right; }';
+  html += '.total-row td { font-weight:bold; background:#f3f4f6; }';
+  html += '.summary-box { display:flex; gap:10px; margin-bottom:14px; }';
+  html += '.summary-box > div { flex:1; border:1px solid #999; padding:8px; text-align:center; }';
+  html += '.summary-box .lbl { font-size:10px; color:#555; }';
+  html += '.summary-box .val { font-size:16px; font-weight:bold; }';
+  html += '.footer { margin-top:20px; text-align:center; font-size:9px; color:#777; border-top:1px solid #ccc; padding-top:6px; }';
+  html += '</style></head><body>';
+
+  // Header
+  html += '<h1>RAPORT DITOR I SHITJEVE</h1>';
+  html += '<div class="subtitle">Data: <b>' + dataZgjedhur + '</b> &nbsp;•&nbsp; Printuar: ' + new Date().toLocaleString('sq-AL') + '</div>';
+
+  // Përmbledhje
+  html += '<div class="summary-box">';
+  html += '<div><div class="lbl">Total Shitje</div><div class="val">' + totalShitje.toFixed(2) + ' €</div></div>';
+  html += '<div><div class="lbl">Nr. Transaksioneve</div><div class="val">' + shitjet.length + '</div></div>';
+  html += '<div><div class="lbl">Nr. Artikujve</div><div class="val">' + totalArtikuj + '</div></div>';
+  html += '</div>';
+
+  // Raporti sipas punëtorit
+  html += '<h2>📊 Përmbledhje sipas Punëtorit</h2>';
+  html += '<table><thead><tr>';
+  html += '<th>Punëtori</th><th class="num">Nr. Shitjeve</th><th class="num">Nr. Artikujve</th><th class="num">Totali (€)</th>';
+  html += '</tr></thead><tbody>';
+  Object.entries(sipasPuntorit).forEach(([pid, v]) => {
+    const prof = mapProfiles[pid];
+    const emri = prof ? ((prof.emri || '') + ' ' + (prof.mbiemri || '')).trim() || prof.username : 'Panjohur';
+    html += '<tr><td>' + emri + '</td><td class="num">' + v.shitje + '</td><td class="num">' + v.artikuj + '</td><td class="num">' + v.total.toFixed(2) + '</td></tr>';
+  });
+  html += '<tr class="total-row"><td>TOTAL</td><td class="num">' + shitjet.length + '</td><td class="num">' + totalArtikuj + '</td><td class="num">' + totalShitje.toFixed(2) + '</td></tr>';
+  html += '</tbody></table>';
+
+  // Detajet e shitjeve
+  html += '<h2>🧾 Detajet e Shitjeve</h2>';
+  html += '<table><thead><tr>';
+  html += '<th>#</th><th>Ora</th><th>Punëtori</th><th>Produkti</th><th class="num">Sasia</th><th class="num">Çmimi (€)</th><th class="num">Nëntotali (€)</th>';
+  html += '</tr></thead><tbody>';
+  let idx = 1;
+  shitjet.forEach(s => {
+    const detajetES = (detajet || []).filter(d => d.shitje_id === s.id);
+    const prof = mapProfiles[s.user_id || s.punetori_id];
+    const emriP = prof ? ((prof.emri || '') + ' ' + (prof.mbiemri || '')).trim() || prof.username : 'Panjohur';
+    const ora = s.data_shitjes ? new Date(s.data_shitjes).toLocaleTimeString('sq-AL', {hour:'2-digit', minute:'2-digit'}) : '-';
+    if (!detajetES.length) {
+      html += '<tr><td>' + idx++ + '</td><td>' + ora + '</td><td>' + emriP + '</td><td colspan="4" class="num">Total: ' + Number(s.total || 0).toFixed(2) + ' €</td></tr>';
+    } else {
+      detajetES.forEach((d, i) => {
+        const prod = mapProdukte[d.produkt_id] || {};
+        html += '<tr>';
+        html += '<td>' + (i === 0 ? idx++ : '') + '</td>';
+        html += '<td>' + (i === 0 ? ora : '') + '</td>';
+        html += '<td>' + (i === 0 ? emriP : '') + '</td>';
+        html += '<td>' + (prod.emri || 'Produkt #' + d.produkt_id) + '</td>';
+        html += '<td class="num">' + (d.sasia || 0) + '</td>';
+        html += '<td class="num">' + Number(d.cmimi || 0).toFixed(2) + '</td>';
+        html += '<td class="num">' + Number(d.nentotali || (d.sasia * d.cmimi) || 0).toFixed(2) + '</td>';
+        html += '</tr>';
+      });
+    }
+  });
+  html += '<tr class="total-row"><td colspan="6">TOTAL DITOR</td><td class="num">' + totalShitje.toFixed(2) + '</td></tr>';
+  html += '</tbody></table>';
+
+  // Footer
+  html += '<div class="footer">Raport i gjeneruar automatikisht • Gjeneratori i Barkodeve</div>';
+  html += '</body></html>';
+
+  // 8. Printo në iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+  iframe.srcdoc = html;
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }, 500);
+  };
 }
 
 // Kontrollo nëse ka parametër ?print=ID ne URL
