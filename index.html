@@ -187,7 +187,11 @@ function buildNav() {
     '<a href="barkodet.html" target="_blank"><i class="bi bi-upc-scan"></i> Barkodet</a>' +
     '<a href="#" onclick="navigate(\'raporte\');return false" id="nav-raporte"><i class="bi bi-bar-chart"></i> Raporte</a>' +
     '<a href="#" onclick="navigate(\'perdoruesit\');return false" id="nav-perdoruesit"><i class="bi bi-people"></i> Përdoruesit</a>';
-  const workerLinks = '<a href="#" onclick="navigate(\'shitje\');return false" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>';
+  
+  // Shtojmë linkun për raportin e punëtorit
+  const workerLinks = '<a href="#" onclick="navigate(\'shitje\');return false" id="nav-shitje"><i class="bi bi-cart-check"></i> Shitje</a>' +
+    '<a href="#" onclick="navigate(\'raporti_im\');return false" id="nav-raporti_im"><i class="bi bi-file-earmark-text"></i> Raporti Im Ditor</a>';
+
   document.getElementById('navMenu').innerHTML =
     (USER.roli === 'admin' ? adminLinks : workerLinks) +
     '<a href="#" onclick="logout();return false" class="text-danger"><i class="bi bi-box-arrow-right"></i> Dil</a>';
@@ -206,7 +210,9 @@ function navigate(page) {
   document.querySelectorAll('#navMenu a').forEach(a => a.classList.remove('active'));
   const el = document.getElementById('nav-' + page);
   if (el) el.classList.add('active');
+  
   if (page === 'shitje') renderShitje();
+  if (page === 'raporti_im') renderRaportiIm(); // <--- Shtuar faqja e re
   if (page === 'dashboard' && USER.roli === 'admin') renderDashboard();
   if (page === 'produktet' && USER.roli === 'admin') renderProduktet();
   if (page === 'stok' && USER.roli === 'admin') renderStok();
@@ -541,10 +547,8 @@ async function perfundoSshitjen() {
       if (errIns) throw new Error('Shitje: ' + errIns.message);
     }
 
-    // Sukses: toast i gjelbër, pastro shportën, fokus kthehu te barkodi
     toast('✅ Shitja u regjistrua!', 'success');
 
-    // Ripërdorim të njëjtën pamje por pa rindërtuar gjithçka — thjesht pastro shportën
     SHporta = [];
     renderSshporta();
     const info = document.getElementById('produktInfo');
@@ -558,6 +562,56 @@ async function perfundoSshitjen() {
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle"></i> Përfundo'; }
   }
+}
+
+// =====================================================
+// RAPORTI IM DITOR (Vetëm për punëtorët - vetëm lexim)
+// =====================================================
+async function renderRaportiIm() {
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = '<p>Duke u ngarkuar...</p>';
+  
+  const sot = new Date().toISOString().slice(0,10);
+  
+  // Marrim vetëm shitjet e këtij punëtori për ditën e sotme
+  const { data: shitjet, error } = await db.from('shitjet')
+    .select('*')
+    .eq('punetor_id', USER.id)
+    .gte('krijuar_me', sot + 'T00:00:00')
+    .lte('krijuar_me', sot + 'T23:59:59')
+    .order('krijuar_me', { ascending: false });
+
+  if (error) {
+    mc.innerHTML = '<div class="alert alert-danger">Gabim: ' + error.message + '</div>';
+    return;
+  }
+
+  const totali = (shitjet || []).reduce((s, x) => s + Number(x.totali), 0);
+  const totalArtikuj = (shitjet || []).reduce((s, x) => s + Number(x.sasia), 0);
+
+  mc.innerHTML = '<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">' +
+    '<h3 class="mb-0">📄 Raporti Im Ditor</h3>' +
+    '<span class="badge bg-primary fs-6">Data: ' + sot + '</span>' +
+    '</div>' +
+    '<div class="row g-3 mb-4">' +
+    '<div class="col-md-4"><div class="stat bg-blue"><h6>Totali i Shitjeve</h6><h2>' + totali.toFixed(2) + ' €</h2></div></div>' +
+    '<div class="col-md-4"><div class="stat bg-green"><h6>Nr. Transaksioneve</h6><h2>' + (shitjet?.length || 0) + '</h2></div></div>' +
+    '<div class="col-md-4"><div class="stat bg-purple"><h6>Nr. Artikujve</h6><h2>' + totalArtikuj + '</h2></div></div>' +
+    '</div>' +
+    '<div class="card p-3">' +
+    '<h5 class="mb-3">🧾 Detajet e Shitjeve të Mia</h5>' +
+    '<div class="table-responsive">' +
+    '<table class="table table-sm align-middle mb-0">' +
+    '<thead class="table-light"><tr><th>Ora</th><th>Produkti</th><th class="text-end">Sasia</th><th class="text-end">Çmimi (€)</th><th class="text-end">Totali (€)</th></tr></thead>' +
+    '<tbody>' +
+    ((shitjet || []).map(s => 
+      '<tr><td>' + new Date(s.krijuar_me).toLocaleTimeString('sq-AL', { hour:'2-digit', minute:'2-digit' }) + '</td>' +
+      '<td>' + s.emri_produktit + '</td>' +
+      '<td class="text-end">' + s.sasia + '</td>' +
+      '<td class="text-end">' + Number(s.cmimi_njesi).toFixed(2) + '</td>' +
+      '<td class="text-end fw-bold">' + Number(s.totali).toFixed(2) + ' €</td></tr>'
+    ).join('') || '<tr><td colspan="5" class="text-center text-muted py-4">Nuk keni bërë asnjë shitje sot.</td></tr>') +
+    '</tbody></table></div></div>';
 }
 
 // =====================================================
@@ -677,7 +731,7 @@ async function ruajStok(id) {
 }
 
 // =====================================================
-// RAPORTE
+// RAPORTE (Vetëm Admin)
 // =====================================================
 async function renderRaporte() {
   const mc = document.getElementById('mainContent');
@@ -745,38 +799,72 @@ async function ngarkoRaportet() {
       '<td>'+s.punetor_emri+'</td>' +
       '<td>'+s.sasia+'</td>' +
       '<td><b>'+Number(s.totali).toFixed(2)+' €</b></td>' +
-      '<td><button class="btn btn-sm btn-outline-danger" onclick="fshiShitjen('+s.id+', '+s.produkt_id+', '+s.sasia+')" title="Fshij shitjen"><i class="bi bi-trash"></i></button></td></tr>'
+      '<td><button class="btn btn-sm btn-outline-danger" onclick="fshiShitjen('+s.id+')" title="Fshij shitjen"><i class="bi bi-trash"></i></button></td></tr>'
     ).join('') || '<tr><td colspan="6" class="text-muted">Nuk ka shitje</td></tr>') +
     '</tbody></table></div></div>';
 }
 
-// Funksioni per te fshire nje shitje dhe per te kthyer stokun
-async function fshiShitjen(shitjeId, produktId, sasia) {
+// =====================================================
+// FSHI SHITJEN (Vetëm Admin)
+// =====================================================
+async function fshiShitjen(shitjeId) {
   if (!confirm('A jeni i sigurt që dëshironi të fshini këtë shitje? Stoku i produktit do të rritet përsëri.')) return;
-  
+
   try {
-    const { data: prod, error: errProd } = await db.from('produktet').select('sasia').eq('id', produktId).single();
-    if (errProd) throw new Error('Gabim gjatë leximit të stokut: ' + errProd.message);
-    
-    if (prod) {
-      const stokuRi = Number(prod.sasia) + Number(sasia);
-      const { error: errUpd } = await db.from('produktet').update({ sasia: stokuRi }).eq('id', produktId);
-      if (errUpd) throw new Error('Gabim gjatë kthimit të stokut: ' + errUpd.message);
+    const { data: shitja, error: errS } = await db
+      .from('shitjet')
+      .select('*')
+      .eq('id', shitjeId)
+      .single();
+
+    if (errS) throw new Error('Lexim shitje: ' + errS.message);
+    if (!shitja) throw new Error('Shitja nuk u gjet!');
+
+    const produktId = shitja.produkt_id;
+    const sasia     = Number(shitja.sasia || 0);
+
+    if (produktId) {
+      const { data: prod, error: errProd } = await db
+        .from('produktet')
+        .select('sasia')
+        .eq('id', produktId)
+        .maybeSingle();
+
+      if (errProd) throw new Error('Lexim stok: ' + errProd.message);
+
+      if (prod) {
+        const stokuRi = Number(prod.sasia || 0) + sasia;
+        const { error: errUpd } = await db
+          .from('produktet')
+          .update({ sasia: stokuRi })
+          .eq('id', produktId);
+
+        if (errUpd) throw new Error('Kthim stoku: ' + errUpd.message);
+      }
     }
-    
-    const { error: errDel } = await db.from('shitjet').delete().eq('id', shitjeId);
-    if (errDel) throw new Error('Gabim gjatë fshirjes së shitjes: ' + errDel.message);
-    
-    alert('✅ Shitja u fshi me sukses dhe stoku u kthye!');
+
+    const { error: errDel, count } = await db
+      .from('shitjet')
+      .delete({ count: 'exact' })
+      .eq('id', shitjeId);
+
+    if (errDel) throw new Error('Fshirje shitje: ' + errDel.message);
+
+    if (count === 0) {
+      throw new Error('Shitja nuk u fshi — kontrollo politikat RLS te tabela "shitjet" (duhet DELETE për përdoruesin).');
+    }
+
+    toast('✅ Shitja u fshi dhe stoku u kthye!', 'success');
     ngarkoRaportet();
-    
+
   } catch (e) {
-    alert('❌ ' + e.message);
+    console.error('GABIM fshirje:', e);
+    toast('❌ ' + e.message, 'error');
   }
 }
 
 // =====================================================
-// PRINTIMI I RAPORTIT DITOR NË FLET A4
+// PRINTIMI I RAPORTIT DITOR NË FLET A4 (Vetëm Admin)
 // =====================================================
 async function printoRaportinDitor() {
   const dataZgjedhur = prompt(
@@ -892,7 +980,7 @@ async function printoRaportinDitor() {
 }
 
 // =====================================================
-// PËRDORUESIT
+// PËRDORUESIT (Vetëm Admin)
 // =====================================================
 async function renderPerdoruesit() {
   const mc = document.getElementById('mainContent');
